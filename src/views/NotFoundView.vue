@@ -7,8 +7,8 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 
-const destination = computed(() => (auth.isAuthenticated ? '/dashboard' : '/login'))
-const label = computed(() => (auth.isAuthenticated ? 'Ir al dashboard' : 'Iniciar sesión'))
+const destination = computed(() => (auth.isAuthenticated ? '/' : '/login'))
+const label = computed(() => (auth.isAuthenticated ? 'Ir al inicio' : 'Iniciar sesión'))
 </script>
 
 <template>

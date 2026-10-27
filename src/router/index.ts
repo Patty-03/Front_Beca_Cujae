@@ -5,6 +5,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     title?: string
+    description?: string
   }
 }
 
@@ -24,25 +25,64 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: { name: 'dashboard' },
+          name: 'inicio',
+          component: () => import('@/views/HomeView.vue'),
+          meta: { requiresAuth: true, title: 'Inicio' },
         },
         {
           path: 'dashboard',
-          name: 'dashboard',
-          component: () => import('@/views/DashboardView.vue'),
-          meta: { requiresAuth: true, title: 'Dashboard' },
+          redirect: { name: 'inicio' },
         },
         {
-          path: 'solicitudes',
-          name: 'solicitudes',
-          component: () => import('@/views/SolicitudesView.vue'),
-          meta: { requiresAuth: true, title: 'Solicitudes' },
+          path: 'infraestructura',
+          name: 'infraestructura',
+          component: () => import('@/views/InfraestructuraDashboardView.vue'),
+          meta: { requiresAuth: true, title: 'Infraestructura' },
         },
         {
-          path: 'becas',
-          name: 'becas',
-          component: () => import('@/views/BecasView.vue'),
-          meta: { requiresAuth: true, title: 'Becas' },
+          path: 'deberes',
+          name: 'deberes',
+          component: () => import('@/views/ModuloPlaceholderView.vue'),
+          meta: {
+            requiresAuth: true,
+            title: 'Deberes',
+            description:
+              'Aquí podrás gestionar las tareas y responsabilidades de los estudiantes de la residencia.',
+          },
+        },
+        {
+          path: 'estudiantes',
+          name: 'estudiantes',
+          component: () => import('@/views/ModuloPlaceholderView.vue'),
+          meta: {
+            requiresAuth: true,
+            title: 'Estudiantes',
+            description:
+              'Aquí podrás consultar la información y el estado de los estudiantes residentes.',
+          },
+        },
+        {
+          path: 'evaluaciones',
+          name: 'evaluaciones',
+          component: () => import('@/views/ModuloPlaceholderView.vue'),
+          meta: {
+            requiresAuth: true,
+            title: 'Evaluaciones',
+            description:
+              'Aquí podrás revisar y registrar las evaluaciones realizadas a los estudiantes.',
+          },
+        },
+        {
+          path: 'infraestructura/edificios',
+          name: 'edificios',
+          component: () => import('@/views/EdificiosView.vue'),
+          meta: { requiresAuth: true, title: 'Edificios' },
+        },
+        {
+          path: 'infraestructura/edificios/:id',
+          name: 'edificio-detalle',
+          component: () => import('@/views/EdificioDetalleView.vue'),
+          meta: { requiresAuth: true, title: 'Detalle del edificio' },
         },
       ],
     },
@@ -58,19 +98,19 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+  if (to.name === 'login' && auth.isAuthenticated) {
+    return { name: 'inicio' }
   }
 
-  if (to.name === 'login' && auth.isAuthenticated) {
-    return { name: 'dashboard' }
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   return true
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} · Becas CUJAE` : 'Becas CUJAE'
+  document.title = to.meta.title ? `${to.meta.title} · Residencia CUJAE` : 'Residencia CUJAE'
 })
 
 export default router
