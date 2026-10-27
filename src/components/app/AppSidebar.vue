@@ -3,11 +3,12 @@ import type { Component } from 'vue'
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
-  AwardIcon,
+  Building2Icon,
   ChevronsUpDownIcon,
+  ClipboardCheckIcon,
   ClipboardListIcon,
   GraduationCapIcon,
-  LayoutDashboardIcon,
+  HouseIcon,
   LogOutIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -41,6 +42,12 @@ interface NavItem {
   label: string
   to: string
   icon: Component
+  exact?: boolean
+}
+
+interface NavGroup {
+  label: string
+  items: NavItem[]
 }
 
 const route = useRoute()
@@ -48,13 +55,32 @@ const router = useRouter()
 const auth = useAuthStore()
 const { isMobile, setOpenMobile } = useSidebar()
 
-const navigation: NavItem[] = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboardIcon },
-  { label: 'Solicitudes', to: '/solicitudes', icon: ClipboardListIcon },
-  { label: 'Becas', to: '/becas', icon: AwardIcon },
+const navigation: NavGroup[] = [
+  {
+    label: 'General',
+    items: [{ label: 'Inicio', to: '/', icon: HouseIcon, exact: true }],
+  },
+  {
+    label: 'Módulos',
+    items: [
+      { label: 'Infraestructura', to: '/infraestructura', icon: Building2Icon, exact: true },
+      { label: 'Deberes', to: '/deberes', icon: ClipboardListIcon, exact: true },
+      { label: 'Estudiantes', to: '/estudiantes', icon: GraduationCapIcon, exact: true },
+      { label: 'Evaluaciones', to: '/evaluaciones', icon: ClipboardCheckIcon, exact: true },
+    ],
+  },
+  {
+    label: 'Infraestructura',
+    items: [{ label: 'Edificios', to: '/infraestructura/edificios', icon: Building2Icon }],
+  },
 ]
 
 const initials = computed(() => getInitials(auth.user?.name ?? 'Usuario'))
+
+function esRutaActiva(item: NavItem) {
+  if (item.exact) return route.path === item.to
+  return route.path === item.to || route.path.startsWith(`${item.to}/`)
+}
 
 function handleNavigate() {
   if (isMobile.value) setOpenMobile(false)
@@ -73,15 +99,15 @@ async function handleLogout() {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child>
-            <RouterLink to="/dashboard">
+            <RouterLink to="/">
               <div
                 class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
               >
                 <GraduationCapIcon class="size-4" />
               </div>
               <div class="grid flex-1 text-left text-sm leading-tight">
-                <span class="truncate font-semibold">Becas CUJAE</span>
-                <span class="text-muted-foreground truncate text-xs">Gestión de becas</span>
+                <span class="truncate font-semibold">Residencia CUJAE</span>
+                <span class="text-muted-foreground truncate text-xs">Gestión de residencia</span>
               </div>
             </RouterLink>
           </SidebarMenuButton>
@@ -90,12 +116,12 @@ async function handleLogout() {
     </SidebarHeader>
 
     <SidebarContent>
-      <SidebarGroup>
-        <SidebarGroupLabel>Principal</SidebarGroupLabel>
+      <SidebarGroup v-for="group in navigation" :key="group.label">
+        <SidebarGroupLabel>{{ group.label }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem v-for="item in navigation" :key="item.to">
-              <SidebarMenuButton :is-active="route.path === item.to" :tooltip="item.label" as-child>
+            <SidebarMenuItem v-for="item in group.items" :key="item.to">
+              <SidebarMenuButton :is-active="esRutaActiva(item)" :tooltip="item.label" as-child>
                 <RouterLink :to="item.to" @click="handleNavigate">
                   <component :is="item.icon" />
                   <span>{{ item.label }}</span>

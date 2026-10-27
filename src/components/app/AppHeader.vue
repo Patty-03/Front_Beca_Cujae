@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { BellIcon } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import ModeToggle from '@/components/ModeToggle.vue'
 import { Button } from '@/components/ui/button'
 import {
   Breadcrumb,
@@ -17,7 +16,9 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
 const route = useRoute()
-const pageTitle = computed(() => route.meta.title ?? 'Dashboard')
+const pageTitle = computed(() => route.meta.title ?? 'Inicio')
+const esInicio = computed(() => route.name === 'inicio')
+const esDetalleEdificio = computed(() => route.name === 'edificio-detalle')
 
 function showNotifications() {
   toast.info('No tienes notificaciones nuevas')
@@ -33,15 +34,28 @@ function showNotifications() {
 
     <Breadcrumb>
       <BreadcrumbList>
-        <BreadcrumbItem class="hidden md:block">
-          <BreadcrumbLink as-child>
-            <RouterLink to="/dashboard">Inicio</RouterLink>
-          </BreadcrumbLink>
+        <BreadcrumbItem v-if="esInicio">
+          <BreadcrumbPage>Inicio</BreadcrumbPage>
         </BreadcrumbItem>
-        <BreadcrumbSeparator class="hidden md:block" />
-        <BreadcrumbItem>
-          <BreadcrumbPage>{{ pageTitle }}</BreadcrumbPage>
-        </BreadcrumbItem>
+        <template v-else>
+          <BreadcrumbItem class="hidden md:block">
+            <BreadcrumbLink as-child>
+              <RouterLink to="/">Inicio</RouterLink>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator class="hidden md:block" />
+          <template v-if="esDetalleEdificio">
+            <BreadcrumbItem class="hidden md:block">
+              <BreadcrumbLink as-child>
+                <RouterLink to="/infraestructura/edificios">Edificios</RouterLink>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator class="hidden md:block" />
+          </template>
+          <BreadcrumbItem>
+            <BreadcrumbPage>{{ pageTitle }}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </template>
       </BreadcrumbList>
     </Breadcrumb>
 
@@ -49,7 +63,6 @@ function showNotifications() {
       <Button variant="ghost" size="icon-sm" aria-label="Notificaciones" @click="showNotifications">
         <BellIcon class="size-4" />
       </Button>
-      <ModeToggle />
     </div>
   </header>
 </template>

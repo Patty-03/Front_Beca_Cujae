@@ -2,183 +2,176 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  AlertCircleIcon,
+  ArrowRightIcon,
+  Building2Icon,
   EyeIcon,
   EyeOffIcon,
-  GraduationCapIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
+  LockIcon,
   ShieldCheckIcon,
-  SparklesIcon,
+  UserIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import ModeToggle from '@/components/ModeToggle.vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
 
-const email = ref('')
-const password = ref('')
+const email = ref('ing.juan.perez@cujae.edu.cu')
+const password = ref('Contraseña2026*')
+const remember = ref(true)
 const showPassword = ref(false)
-const error = ref('')
 
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'))
 
 async function handleSubmit() {
-  error.value = ''
-
   try {
     await auth.login(email.value, password.value)
-    toast.success('Bienvenido a Becas CUJAE', {
+    toast.success('Bienvenido a CUJAE Residencia', {
       description: 'Sesión iniciada correctamente.',
     })
 
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
+    const redirect =
+      typeof route.query.redirect === 'string' &&
+      route.query.redirect.startsWith('/') &&
+      !route.query.redirect.startsWith('//')
+        ? route.query.redirect
+        : '/'
+
     await router.replace(redirect)
   } catch (caught) {
-    error.value = caught instanceof Error ? caught.message : 'No se pudo iniciar sesión.'
+    toast.error('No se pudo iniciar sesión', {
+      description: caught instanceof Error ? caught.message : 'Inténtalo de nuevo.',
+    })
   }
-}
-
-function fillDemoCredentials() {
-  email.value = 'estudiante@cujae.edu.cu'
-  password.value = 'beca2026'
-  error.value = ''
 }
 </script>
 
 <template>
-  <div class="grid min-h-svh lg:grid-cols-2">
-    <div
-      class="relative hidden flex-col justify-between overflow-hidden bg-zinc-950 p-10 text-white lg:flex"
-    >
-      <div class="absolute -top-24 -right-24 size-72 rounded-full bg-white/10 blur-3xl" />
-      <div class="absolute -bottom-32 -left-20 size-80 rounded-full bg-white/10 blur-3xl" />
-
-      <div class="relative flex items-center gap-3">
-        <div class="flex size-10 items-center justify-center rounded-xl bg-white/10">
-          <GraduationCapIcon class="size-6" />
+  <div
+    class="bg-brand-surface text-brand-text selection:bg-brand-primary flex min-h-svh flex-col p-4 font-sans antialiased selection:text-white sm:p-6"
+  >
+    <header class="mb-4 flex w-full items-center justify-between py-2">
+      <div class="flex items-center gap-2">
+        <div
+          class="bg-brand-primary flex size-8 items-center justify-center rounded-lg text-white shadow-sm"
+        >
+          <Building2Icon class="size-5" />
         </div>
         <div>
-          <p class="font-semibold">Becas CUJAE</p>
-          <p class="text-white/70 text-xs">Universidad Tecnológica de La Habana</p>
+          <span
+            class="text-brand-primary block text-[10px] leading-none font-bold tracking-wider uppercase"
+          >
+            CUJAE
+          </span>
+          <span class="text-brand-navy text-xs leading-tight font-semibold">Residencia</span>
         </div>
       </div>
+    </header>
 
-      <div class="relative space-y-6">
-        <h2 class="max-w-md text-4xl font-semibold tracking-tight">
-          Impulsa tu futuro con una beca universitaria.
-        </h2>
-        <p class="text-white/70 max-w-sm">
-          Gestiona tus solicitudes, consulta requisitos y da seguimiento a cada etapa desde un solo
-          lugar.
+    <main
+      class="border-brand-border m-auto flex w-full max-w-sm flex-col rounded-2xl border bg-white p-6 shadow-xl"
+    >
+      <div class="mb-6 text-center">
+        <div
+          class="from-brand-navy to-brand-primary mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-tr text-white shadow-md"
+        >
+          <ShieldCheckIcon class="size-8" />
+        </div>
+        <h1 class="text-brand-navy text-xl font-bold tracking-tight">Inicio de Sesión</h1>
+        <p class="text-brand-text-secondary mt-1 text-xs">
+          Sistema de Gestión de Residencia Estudiantil
         </p>
-        <div class="grid max-w-md grid-cols-2 gap-4">
-          <div class="border-white/10 bg-white/5 rounded-xl border p-4">
-            <p class="text-2xl font-semibold">+1.200</p>
-            <p class="text-white/70 text-xs">Estudiantes beneficiados</p>
-          </div>
-          <div class="border-white/10 bg-white/5 rounded-xl border p-4">
-            <p class="text-2xl font-semibold">4</p>
-            <p class="text-white/70 text-xs">Programas activos</p>
-          </div>
-        </div>
       </div>
 
-      <div class="text-white/60 relative flex items-center gap-2 text-xs">
-        <ShieldCheckIcon class="size-4" />
-        Información protegida y actualizada
-      </div>
-    </div>
-
-    <div class="relative flex items-center justify-center p-6">
-      <div class="absolute top-4 right-4">
-        <ModeToggle />
-      </div>
-
-      <div class="w-full max-w-sm space-y-8">
-        <div class="space-y-2">
-          <div class="flex items-center gap-2 lg:hidden">
+      <form class="space-y-4" novalidate @submit.prevent="handleSubmit">
+        <div>
+          <Label
+            for="username"
+            class="mb-1 block text-xs font-semibold tracking-wider text-slate-700 uppercase"
+          >
+            Usuario
+          </Label>
+          <div class="relative">
             <div
-              class="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg"
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"
             >
-              <GraduationCapIcon class="size-5" />
+              <UserIcon class="size-[18px]" />
             </div>
-            <span class="font-semibold">Becas CUJAE</span>
-          </div>
-          <h1 class="text-2xl font-semibold tracking-tight">Inicia sesión</h1>
-          <p class="text-muted-foreground text-sm">
-            Accede con tu correo institucional para consultar tus becas.
-          </p>
-        </div>
-
-        <form class="space-y-4" novalidate @submit.prevent="handleSubmit">
-          <Alert v-if="error" variant="destructive" class="py-2">
-            <AlertCircleIcon />
-            <AlertDescription>{{ error }}</AlertDescription>
-          </Alert>
-
-          <div class="space-y-2">
-            <Label for="email">Correo electrónico</Label>
             <Input
-              id="email"
+              id="username"
               v-model="email"
-              type="email"
-              placeholder="estudiante@cujae.edu.cu"
-              autocomplete="email"
+              type="text"
+              placeholder="usuario@cujae.edu.cu"
+              autocomplete="username"
               required
+              class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-3 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:bg-white focus-visible:ring-2"
             />
           </div>
-
-          <div class="space-y-2">
-            <Label for="password">Contraseña</Label>
-            <div class="relative">
-              <Input
-                id="password"
-                v-model="password"
-                :type="passwordType"
-                placeholder="••••••••"
-                autocomplete="current-password"
-                class="pr-10"
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                class="absolute top-1/2 right-1 -translate-y-1/2"
-                :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-                @click="showPassword = !showPassword"
-              >
-                <EyeOffIcon v-if="showPassword" class="size-4" />
-                <EyeIcon v-else class="size-4" />
-              </Button>
-            </div>
-          </div>
-
-          <Button type="submit" class="w-full" :disabled="auth.isLoading">
-            <Loader2Icon v-if="auth.isLoading" class="animate-spin" />
-            <SparklesIcon v-else />
-            {{ auth.isLoading ? 'Entrando…' : 'Entrar' }}
-          </Button>
-        </form>
-
-        <div class="bg-muted/50 space-y-1 rounded-lg border p-3 text-xs">
-          <p class="font-medium">Acceso de demostración</p>
-          <p class="text-muted-foreground">
-            Usa <span class="font-mono">estudiante@cujae.edu.cu</span> y
-            <span class="font-mono">beca2026</span>.
-          </p>
-          <Button variant="link" size="xs" class="h-auto px-0" @click="fillDemoCredentials">
-            Rellenar credenciales
-          </Button>
         </div>
-      </div>
-    </div>
+
+        <div>
+          <div class="mb-1 flex items-center justify-between">
+            <Label
+              for="password"
+              class="block text-xs font-semibold tracking-wider text-slate-700 uppercase"
+            >
+              Contraseña
+            </Label>
+            <a href="#" class="text-[11px] font-medium text-blue-600 hover:underline">¿Olvidó?</a>
+          </div>
+          <div class="relative">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"
+            >
+              <LockIcon class="size-[18px]" />
+            </div>
+            <Input
+              id="password"
+              v-model="password"
+              :type="passwordType"
+              placeholder="••••••••••••"
+              autocomplete="current-password"
+              required
+              class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-10 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:bg-white focus-visible:ring-2"
+            />
+            <button
+              type="button"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition-colors hover:text-slate-600"
+              :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              @click="showPassword = !showPassword"
+            >
+              <EyeOffIcon v-if="showPassword" class="size-[18px]" />
+              <EyeIcon v-else class="size-[18px]" />
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              v-model="remember"
+              type="checkbox"
+              class="accent-brand-primary focus:ring-brand-primary size-4 rounded border-slate-300"
+            />
+            <span class="text-xs text-slate-600">Mantener sesión iniciada</span>
+          </label>
+        </div>
+
+        <Button
+          type="submit"
+          :disabled="auth.isLoading"
+          class="bg-brand-primary hover:bg-brand-primary-hover h-12 w-full cursor-pointer gap-2 rounded-xl text-sm font-semibold text-white shadow-md transition-all active:scale-95 disabled:opacity-70"
+        >
+          <LoaderCircleIcon v-if="auth.isLoading" class="size-[18px] animate-spin" />
+          <span>{{ auth.isLoading ? 'INICIANDO…' : 'INICIAR SESIÓN' }}</span>
+          <ArrowRightIcon v-if="!auth.isLoading" class="size-[18px]" />
+        </Button>
+      </form>
+    </main>
   </div>
 </template>
