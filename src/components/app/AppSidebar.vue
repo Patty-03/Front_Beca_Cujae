@@ -35,6 +35,8 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
+import type { Permission } from '@/types/auth'
+import { ETIQUETAS_ROL } from '@/lib/auth'
 import { getInitials } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 
@@ -43,6 +45,7 @@ interface NavItem {
   to: string
   icon: Component
   exact?: boolean
+  permission?: Permission
 }
 
 interface NavGroup {
@@ -63,19 +66,63 @@ const navigation: NavGroup[] = [
   {
     label: 'Módulos',
     items: [
-      { label: 'Infraestructura', to: '/infraestructura', icon: Building2Icon, exact: true },
-      { label: 'Deberes', to: '/deberes', icon: ClipboardListIcon, exact: true },
-      { label: 'Estudiantes', to: '/estudiantes', icon: GraduationCapIcon, exact: true },
-      { label: 'Evaluaciones', to: '/evaluaciones', icon: ClipboardCheckIcon, exact: true },
+      {
+        label: 'Infraestructura',
+        to: '/infraestructura',
+        icon: Building2Icon,
+        exact: true,
+        permission: 'infraestructura:read',
+      },
+      {
+        label: 'Deberes',
+        to: '/deberes',
+        icon: ClipboardListIcon,
+        exact: true,
+        permission: 'deberes:read',
+      },
+      {
+        label: 'Estudiantes',
+        to: '/estudiantes',
+        icon: GraduationCapIcon,
+        exact: true,
+        permission: 'estudiantes:read',
+      },
+      {
+        label: 'Evaluaciones',
+        to: '/evaluaciones',
+        icon: ClipboardCheckIcon,
+        exact: true,
+        permission: 'evaluaciones:read',
+      },
     ],
   },
   {
     label: 'Infraestructura',
-    items: [{ label: 'Edificios', to: '/infraestructura/edificios', icon: Building2Icon }],
+    items: [
+      {
+        label: 'Edificios',
+        to: '/infraestructura/edificios',
+        icon: Building2Icon,
+        permission: 'infraestructura:read',
+      },
+    ],
   },
 ]
 
+const gruposVisibles = computed(() =>
+  navigation
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.permission || auth.can(item.permission)),
+    }))
+    .filter((group) => group.items.length > 0),
+)
+
 const initials = computed(() => getInitials(auth.user?.name ?? 'Usuario'))
+const rolPrincipal = computed(() => auth.user?.roles[0])
+const rolEtiqueta = computed(() =>
+  rolPrincipal.value ? ETIQUETAS_ROL[rolPrincipal.value] : 'Sin rol asignado',
+)
 
 function esRutaActiva(item: NavItem) {
   if (item.exact) return route.path === item.to
@@ -87,8 +134,21 @@ function handleNavigate() {
 }
 
 async function handleLogout() {
-  auth.logout()
+  let falloEnServidor = false
+
+  try {
+    await auth.logout()
+  } catch {
+    falloEnServidor = true
+  }
+
   await router.push({ name: 'login' })
+
+  if (falloEnServidor) {
+    toast.warning('La sesión local se cerró, pero no se pudo confirmar con el servidor.')
+    return
+  }
+
   toast.success('Sesión cerrada correctamente')
 }
 </script>
@@ -116,7 +176,7 @@ async function handleLogout() {
     </SidebarHeader>
 
     <SidebarContent>
-      <SidebarGroup v-for="group in navigation" :key="group.label">
+      <SidebarGroup v-for="group in gruposVisibles" :key="group.label">
         <SidebarGroupLabel>{{ group.label }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -157,7 +217,7 @@ async function handleLogout() {
             <DropdownMenuContent side="right" align="end" :side-offset="8" class="w-56">
               <DropdownMenuLabel>
                 <p class="text-sm font-medium">{{ auth.user?.name }}</p>
-                <p class="text-muted-foreground text-xs font-normal">{{ auth.user?.role }}</p>
+                <p class="text-muted-foreground text-xs font-normal">{{ rolEtiqueta }}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem @select="handleLogout">

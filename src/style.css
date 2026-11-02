@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import '@fontsource-variable/inter';
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
 @theme inline {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
   --color-brand-navy: #003366;
   --color-brand-primary: #006a4e;
@@ -64,7 +64,7 @@
   --secondary: #e9f2ef;
   --secondary-foreground: #003366;
   --muted: #eef2f5;
-  --muted-foreground: #6c757d;
+  --muted-foreground: #5c636a;
   --accent: #e6f2ee;
   --accent-foreground: #003366;
   --destructive: #ba1a1a;

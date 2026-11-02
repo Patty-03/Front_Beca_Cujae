@@ -34,7 +34,10 @@ import {
   obtenerEdificios,
   obtenerEstadosConstructivos,
 } from '@/services/infraestructura'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
+const puedeEscribir = computed(() => auth.can('infraestructura:write'))
 const edificios = ref<EdificioResumen[]>([])
 const estados = ref<EstadoConstructivo[]>([])
 const cargando = ref(true)
@@ -93,16 +96,20 @@ async function cargar() {
 }
 
 function abrirNuevo() {
+  if (!puedeEscribir.value) return
   edificioEditando.value = null
   dialogoAbierto.value = true
 }
 
 function abrirEditar(edificio: EdificioResumen) {
+  if (!puedeEscribir.value) return
   edificioEditando.value = edificio
   dialogoAbierto.value = true
 }
 
 function solicitarEliminar(edificio: EdificioResumen) {
+  if (!puedeEscribir.value) return
+
   if (edificio.escaleras > 0) {
     toast.error('No se puede eliminar el edificio', {
       description: 'Primero debe eliminar las escaleras registradas.',
@@ -155,7 +162,7 @@ onMounted(cargar)
           Consulta y administra el inventario de infraestructura de la residencia.
         </p>
       </div>
-      <Button @click="abrirNuevo">
+      <Button v-if="puedeEscribir" @click="abrirNuevo">
         <PlusIcon />
         Nuevo edificio
       </Button>
@@ -280,7 +287,7 @@ onMounted(cargar)
             <Button v-if="hayFiltros" variant="outline" size="sm" @click="limpiarFiltros">
               Limpiar filtros
             </Button>
-            <Button v-else size="sm" @click="abrirNuevo">
+            <Button v-else-if="puedeEscribir" size="sm" @click="abrirNuevo">
               <PlusIcon />
               Nuevo edificio
             </Button>

@@ -10,11 +10,15 @@ import { RouterLink, useRoute } from 'vue-router'
 import {
   ArrowLeftIcon,
   Building2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   CircleAlertIcon,
+  DoorOpenIcon,
   DownloadIcon,
   Layers3Icon,
   PencilIcon,
   PlusIcon,
+  SearchIcon,
   TrendingUpIcon,
   UsersIcon,
 } from '@lucide/vue'
@@ -22,6 +26,14 @@ import { toast } from 'vue-sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ConfirmDialog from '@/components/infraestructura/ConfirmDialog.vue'
@@ -36,6 +48,7 @@ import OcupacionBar from '@/components/infraestructura/OcupacionBar.vue'
 import { descargarCsv } from '@/lib/download'
 import { colorEstadoConstructivo } from '@/lib/estadoConstructivo'
 import { formatNumber, formatPercent } from '@/lib/format'
+import { normalizarParaComparar } from '@/lib/validation'
 import {
   eliminarCuarto,
   eliminarEscalera,
@@ -43,7 +56,10 @@ import {
   obtenerEdificio,
   obtenerEstadosConstructivos,
 } from '@/services/infraestructura'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
+const puedeEscribir = computed(() => auth.can('infraestructura:write'))
 const route = useRoute()
 const id = computed(() => Number(route.params.id))
 
@@ -73,6 +89,74 @@ const cuartos = computed(() => detalle.value?.cuartosDetalle ?? [])
 const cuartosNoHabitables = computed(
   () => cuartos.value.filter((cuarto) => !cuarto.estado.habitable).length,
 )
+
+const busquedaCuarto = ref('')
+const estadoCuartoFiltro = ref('todos')
+const escaleraCuartoFiltro = ref('todas')
+const ordenCuarto = ref('nombre')
+const paginaCuartos = ref(1)
+const TAMANO_PAGINA_CUARTOS = 12
+
+const cuartosFiltrados = computed(() => {
+  const texto = normalizarParaComparar(busquedaCuarto.value)
+  const filtrados = cuartos.value.filter((cuarto) => {
+    const coincideTexto = !texto || normalizarParaComparar(cuarto.nombre).includes(texto)
+    const coincideEstado =
+      estadoCuartoFiltro.value === 'todos' || String(cuarto.estado.id) === estadoCuartoFiltro.value
+    const coincideEscalera =
+      escaleraCuartoFiltro.value === 'todas' ||
+      String(cuarto.escaleraId) === escaleraCuartoFiltro.value
+    return coincideTexto && coincideEstado && coincideEscalera
+  })
+
+  return [...filtrados].sort((a, b) => {
+    if (ordenCuarto.value === 'ocupacion') return b.ocupacionPct - a.ocupacionPct
+    if (ordenCuarto.value === 'capacidad') return b.capacidadMaxima - a.capacidadMaxima
+    return a.nombre.localeCompare(b.nombre, 'es', { numeric: true })
+  })
+})
+
+const totalPaginasCuartos = computed(() =>
+  Math.max(1, Math.ceil(cuartosFiltrados.value.length / TAMANO_PAGINA_CUARTOS)),
+)
+
+const cuartosPagina = computed(() => {
+  const inicio = (paginaCuartos.value - 1) * TAMANO_PAGINA_CUARTOS
+  return cuartosFiltrados.value.slice(inicio, inicio + TAMANO_PAGINA_CUARTOS)
+})
+
+const hayFiltrosCuarto = computed(
+  () =>
+    busquedaCuarto.value.trim() !== '' ||
+    estadoCuartoFiltro.value !== 'todos' ||
+    escaleraCuartoFiltro.value !== 'todas' ||
+    ordenCuarto.value !== 'nombre',
+)
+
+const inicioPaginaCuartos = computed(() =>
+  cuartosFiltrados.value.length === 0
+    ? 0
+    : (paginaCuartos.value - 1) * TAMANO_PAGINA_CUARTOS + 1,
+)
+
+const finPaginaCuartos = computed(() =>
+  Math.min(paginaCuartos.value * TAMANO_PAGINA_CUARTOS, cuartosFiltrados.value.length),
+)
+
+function limpiarFiltrosCuarto() {
+  busquedaCuarto.value = ''
+  estadoCuartoFiltro.value = 'todos'
+  escaleraCuartoFiltro.value = 'todas'
+  ordenCuarto.value = 'nombre'
+}
+
+watch([busquedaCuarto, estadoCuartoFiltro, escaleraCuartoFiltro, ordenCuarto], () => {
+  paginaCuartos.value = 1
+})
+
+watch(totalPaginasCuartos, (total) => {
+  if (paginaCuartos.value > total) paginaCuartos.value = total
+})
 
 const distribucionEstados = computed(() => {
   const mapa = new Map<number, { estado: EstadoConstructivo; cuartos: number }>()
@@ -123,28 +207,48 @@ async function cargar() {
 }
 
 function abrirNuevaEscalera() {
+  if (!puedeEscribir.value) return
   escaleraEditando.value = null
   escaleraAbierta.value = true
 }
 
 function abrirEditarEscalera(escalera: EscaleraResumen) {
+  if (!puedeEscribir.value) return
   escaleraEditando.value = escalera
   escaleraAbierta.value = true
 }
 
 function abrirNuevoCuarto(escalera?: EscaleraResumen) {
+  if (!puedeEscribir.value) return
   cuartoEditando.value = null
   escaleraInicial.value = escalera?.id
   cuartoAbierto.value = true
 }
 
 function abrirEditarCuarto(cuarto: CuartoResumen) {
+  if (!puedeEscribir.value) return
   cuartoEditando.value = cuarto
   escaleraInicial.value = cuarto.escaleraId
   cuartoAbierto.value = true
 }
 
 function solicitarEliminar(tipo: 'escalera' | 'cuarto', entidad: EscaleraResumen | CuartoResumen) {
+  if (!puedeEscribir.value) return
+
+  if (tipo === 'escalera' && 'cuartos' in entidad && entidad.cuartos > 0) {
+    toast.error('No se puede eliminar la escalera', {
+      description: 'Primero debe eliminar los cuartos registrados.',
+    })
+    return
+  }
+
+  if (tipo === 'cuarto' && 'tieneAlojamientos' in entidad && entidad.tieneAlojamientos) {
+    toast.error('No se puede eliminar el cuarto', {
+      description: 'Tiene alojamientos asociados.',
+    })
+    return
+  }
+
   entidadEliminando.value = { tipo, id: entidad.id, nombre: entidad.nombre }
   confirmacionAbierta.value = true
 }
@@ -266,7 +370,7 @@ watch(id, cargar, { immediate: true })
             <DownloadIcon />
             Exportar censo
           </Button>
-          <Button @click="editarAbierto = true">
+          <Button v-if="puedeEscribir" @click="editarAbierto = true">
             <PencilIcon />
             Editar edificio
           </Button>
@@ -305,11 +409,36 @@ watch(id, cargar, { immediate: true })
       </div>
 
       <Tabs v-model="tab" class="space-y-4">
-        <TabsList class="w-full justify-start overflow-x-auto sm:w-auto">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="escaleras">Escaleras ({{ escaleras.length }})</TabsTrigger>
-          <TabsTrigger value="cuartos">Cuartos ({{ cuartos.length }})</TabsTrigger>
-          <TabsTrigger value="estadisticas">Estadísticas</TabsTrigger>
+        <TabsList
+          variant="line"
+          class="w-full justify-start gap-1 overflow-x-auto rounded-none border-b bg-transparent p-0!"
+        >
+          <TabsTrigger value="general" class="flex-none! gap-2 px-3">
+            <Building2Icon />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="escaleras" class="flex-none! gap-2 px-3">
+            <Layers3Icon />
+            Escaleras
+            <span
+              class="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
+            >
+              {{ escaleras.length }}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="cuartos" class="flex-none! gap-2 px-3">
+            <DoorOpenIcon />
+            Cuartos
+            <span
+              class="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
+            >
+              {{ cuartos.length }}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="estadisticas" class="flex-none! gap-2 px-3">
+            <TrendingUpIcon />
+            Estadísticas
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" class="space-y-4">
@@ -394,7 +523,12 @@ watch(id, cargar, { immediate: true })
                   <CardTitle>Escaleras del edificio</CardTitle>
                   <CardDescription>Acceso rápido a la ocupación por escalera.</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" @click="abrirNuevaEscalera">
+                <Button
+                  v-if="puedeEscribir"
+                  variant="outline"
+                  size="sm"
+                  @click="abrirNuevaEscalera"
+                >
                   <PlusIcon />
                   Agregar escalera
                 </Button>
@@ -411,6 +545,7 @@ watch(id, cargar, { immediate: true })
                   <OcupacionBar
                     :ocupados="escalera.ocupados"
                     :capacidad="escalera.capacidad"
+                    :etiqueta="`Ocupación de la escalera ${escalera.nombre}`"
                     compacto
                   />
                 </div>
@@ -427,7 +562,7 @@ watch(id, cargar, { immediate: true })
             <p class="text-muted-foreground text-sm">
               {{ escaleras.length }} escaleras registradas en {{ detalle.nombre }}.
             </p>
-            <Button size="sm" @click="abrirNuevaEscalera">
+            <Button v-if="puedeEscribir" size="sm" @click="abrirNuevaEscalera">
               <PlusIcon />
               Agregar escalera
             </Button>
@@ -453,7 +588,12 @@ watch(id, cargar, { immediate: true })
             <p class="text-muted-foreground text-sm">
               Agrega la primera escalera para organizar los cuartos del edificio.
             </p>
-            <Button variant="outline" size="sm" @click="abrirNuevaEscalera">
+            <Button
+              v-if="puedeEscribir"
+              variant="outline"
+              size="sm"
+              @click="abrirNuevaEscalera"
+            >
               <PlusIcon />
               Agregar escalera
             </Button>
@@ -461,48 +601,187 @@ watch(id, cargar, { immediate: true })
         </TabsContent>
 
         <TabsContent value="cuartos" class="space-y-4">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-muted-foreground text-sm">
-              {{ cuartos.length }} cuartos registrados en {{ detalle.nombre }}.
-            </p>
-            <Button size="sm" :disabled="!escaleras.length" @click="abrirNuevoCuarto()">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-base font-semibold">Cuartos</h2>
+                <span
+                  class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+                >
+                  {{ cuartosFiltrados.length }} de {{ cuartos.length }}
+                </span>
+              </div>
+              <p class="text-muted-foreground text-sm">
+                Administra los cuartos del edificio {{ detalle.nombre }}.
+              </p>
+            </div>
+            <Button
+              v-if="puedeEscribir"
+              size="sm"
+              :disabled="!escaleras.length"
+              :title="!escaleras.length ? 'Primero registra una escalera' : undefined"
+              @click="abrirNuevoCuarto()"
+            >
               <PlusIcon />
               Agregar cuarto
             </Button>
           </div>
 
-          <Card>
-            <CardContent class="pt-0">
-              <CuartoTable
-                v-if="cuartos.length"
-                :cuartos="cuartos"
-                @editar="abrirEditarCuarto"
-                @eliminar="solicitarEliminar('cuarto', $event)"
-              />
+          <div class="bg-card rounded-xl border p-3">
+            <div class="flex flex-col gap-2 xl:flex-row xl:items-center">
+              <div class="relative min-w-0 xl:max-w-xs xl:flex-1">
+                <SearchIcon
+                  class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+                />
+                <Input
+                  v-model="busquedaCuarto"
+                  class="pl-8"
+                  placeholder="Buscar por nombre"
+                  aria-label="Buscar cuarto por nombre"
+                />
+              </div>
+
               <div
-                v-else
-                class="flex flex-col items-center justify-center gap-2 py-10 text-center"
+                class="grid grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:flex-1 xl:items-center"
               >
-                <p class="font-medium">Sin cuartos registrados</p>
-                <p class="text-muted-foreground text-sm">
-                  {{
-                    escaleras.length
-                      ? 'Agrega el primer cuarto para completar el inventario.'
-                      : 'Primero debes registrar una escalera.'
-                  }}
-                </p>
+                <Select v-model="estadoCuartoFiltro">
+                  <SelectTrigger
+                    class="w-full xl:w-40"
+                    aria-label="Filtrar cuartos por estado"
+                  >
+                    <SelectValue placeholder="Estado constructivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    <SelectItem
+                      v-for="estado in estados"
+                      :key="estado.id"
+                      :value="String(estado.id)"
+                    >
+                      {{ estado.nombre }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select v-model="escaleraCuartoFiltro">
+                  <SelectTrigger
+                    class="w-full xl:w-40"
+                    aria-label="Filtrar cuartos por escalera"
+                  >
+                    <SelectValue placeholder="Escalera" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas las escaleras</SelectItem>
+                    <SelectItem
+                      v-for="escalera in escaleras"
+                      :key="escalera.id"
+                      :value="String(escalera.id)"
+                    >
+                      {{ escalera.nombre }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select v-model="ordenCuarto">
+                  <SelectTrigger class="w-full xl:w-40" aria-label="Ordenar cuartos">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nombre">Nombre (A-Z)</SelectItem>
+                    <SelectItem value="ocupacion">Mayor ocupación</SelectItem>
+                    <SelectItem value="capacidad">Mayor capacidad</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                v-if="hayFiltrosCuarto"
+                variant="ghost"
+                size="sm"
+                class="self-start xl:ml-auto"
+                @click="limpiarFiltrosCuarto"
+              >
+                Limpiar filtros
+              </Button>
+            </div>
+          </div>
+
+          <div class="bg-card overflow-hidden rounded-xl border">
+            <CuartoTable
+              v-if="cuartosPagina.length"
+              :cuartos="cuartosPagina"
+              @editar="abrirEditarCuarto"
+              @eliminar="solicitarEliminar('cuarto', $event)"
+            />
+            <div
+              v-else-if="cuartos.length"
+              class="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center"
+            >
+              <p class="font-medium">No hay cuartos que coincidan</p>
+              <p class="text-muted-foreground text-sm">
+                Ajusta la búsqueda o los filtros para ver otros resultados.
+              </p>
+              <Button variant="outline" size="sm" @click="limpiarFiltrosCuarto">
+                Limpiar filtros
+              </Button>
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center"
+            >
+              <p class="font-medium">Sin cuartos registrados</p>
+              <p class="text-muted-foreground text-sm">
+                {{
+                  escaleras.length
+                    ? 'Agrega el primer cuarto para completar el inventario.'
+                    : 'Primero debes registrar una escalera.'
+                }}
+              </p>
+              <Button
+                v-if="escaleras.length && puedeEscribir"
+                variant="outline"
+                size="sm"
+                @click="abrirNuevoCuarto()"
+              >
+                <PlusIcon />
+                Agregar cuarto
+              </Button>
+            </div>
+
+            <div
+              v-if="cuartosPagina.length"
+              class="flex flex-col gap-2 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p class="text-muted-foreground text-xs">
+                Mostrando {{ inicioPaginaCuartos }}–{{ finPaginaCuartos }} de
+                {{ cuartosFiltrados.length }}
+                {{ cuartosFiltrados.length === 1 ? 'cuarto' : 'cuartos' }}
+              </p>
+              <div v-if="totalPaginasCuartos > 1" class="flex items-center gap-2">
                 <Button
-                  v-if="escaleras.length"
                   variant="outline"
                   size="sm"
-                  @click="abrirNuevoCuarto()"
+                  :disabled="paginaCuartos <= 1"
+                  @click="paginaCuartos--"
                 >
-                  <PlusIcon />
-                  Agregar cuarto
+                  <ChevronLeftIcon />
+                  Anterior
+                </Button>
+                <span class="text-muted-foreground text-xs tabular-nums">
+                  Página {{ paginaCuartos }} de {{ totalPaginasCuartos }}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="paginaCuartos >= totalPaginasCuartos"
+                  @click="paginaCuartos++"
+                >
+                  Siguiente
+                  <ChevronRightIcon />
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="estadisticas" class="space-y-4">
@@ -523,6 +802,7 @@ watch(id, cargar, { immediate: true })
                   <OcupacionBar
                     :ocupados="escalera.ocupados"
                     :capacidad="escalera.capacidad"
+                    :etiqueta="`Ocupación de la escalera ${escalera.nombre}`"
                     compacto
                   />
                 </div>

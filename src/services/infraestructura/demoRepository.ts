@@ -27,6 +27,15 @@ import type {
   EscaleraRecord,
   EventoAuditoriaRecord,
 } from '@/data/mockInfraestructura'
+import { serializarCsv, type CsvCell } from '@/lib/csv'
+import {
+  LIMITES,
+  normalizarParaComparar,
+  validarCapacidad,
+  validarNombre,
+} from '@/lib/validation'
+import { useAuthStore } from '@/stores/auth'
+import type { InfraestructuraRepository } from './contracts'
 
 const delay = (ms = 240) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 const hoy = () => new Date().toISOString().slice(0, 10)
@@ -106,9 +115,10 @@ const resumenEdificio = (edificio: EdificioRecord): EdificioResumen => {
 }
 
 const registrarEvento = (funcionalidad: string): EventoAuditoriaRecord => {
+  const auth = useAuthStore()
   const evento: EventoAuditoriaRecord = {
     id: siguienteId(eventosAuditoria),
-    usuario: 'Operador de infraestructura',
+    usuario: auth.user?.name ?? 'Sistema',
     servicio: 'Infraestructura',
     funcionalidad,
     fecha: new Date().toISOString(),
@@ -129,11 +139,6 @@ const obtenerEventos = (limite?: number): EventoAuditoria[] =>
       fecha,
     }))
 
-const validarNombre = (nombre: string, entidad: string) => {
-  if (nombre.trim().length < 3) {
-    throw new Error(`El nombre del ${entidad} debe tener al menos 3 caracteres.`)
-  }
-}
 
 const solicitarEdificio = (id: number): EdificioRecord => {
   const edificio = edificios.find((item) => item.id === id)
@@ -201,11 +206,15 @@ export async function obtenerEdificio(id: number): Promise<EdificioDetalle> {
 
 export async function crearEdificio(input: CrearEdificioInput): Promise<EdificioResumen> {
   await delay()
-  const nombre = input.nombre.trim()
-  validarNombre(nombre, 'edificio')
+  const nombre = validarNombre(input.nombre, 'edificio', LIMITES.nombreEdificio)
+  const nombreNormalizado = normalizarParaComparar(nombre)
   obtenerEstado(input.estadoConstructivoId)
 
-  if (edificios.some((edificio) => edificio.nombre.toLowerCase() === nombre.toLowerCase())) {
+  if (
+    edificios.some(
+      (edificio) => normalizarParaComparar(edificio.nombre) === nombreNormalizado,
+    )
+  ) {
     throw new Error('Ya existe un edificio con ese nombre.')
   }
 
@@ -225,13 +234,14 @@ export async function actualizarEdificio(
 ): Promise<EdificioResumen> {
   await delay()
   const edificio = solicitarEdificio(id)
-  const nombre = input.nombre.trim()
-  validarNombre(nombre, 'edificio')
+  const nombre = validarNombre(input.nombre, 'edificio', LIMITES.nombreEdificio)
+  const nombreNormalizado = normalizarParaComparar(nombre)
   obtenerEstado(input.estadoConstructivoId)
 
   if (
     edificios.some(
-      (item) => item.id !== id && item.nombre.toLowerCase() === nombre.toLowerCase(),
+      (item) =>
+        item.id !== id && normalizarParaComparar(item.nombre) === nombreNormalizado,
     )
   ) {
     throw new Error('Ya existe un edificio con ese nombre.')
@@ -261,14 +271,14 @@ export async function crearEscalera(
 ): Promise<EscaleraResumen> {
   await delay()
   const edificio = solicitarEdificio(edificioId)
-  const nombre = input.nombre.trim()
-  validarNombre(nombre, 'escalera')
+  const nombre = validarNombre(input.nombre, 'escalera', LIMITES.nombreEscalera)
+  const nombreNormalizado = normalizarParaComparar(nombre)
 
   if (
     escaleras.some(
       (escalera) =>
         escalera.edificioId === edificioId &&
-        escalera.nombre.toLowerCase() === nombre.toLowerCase(),
+        normalizarParaComparar(escalera.nombre) === nombreNormalizado,
     )
   ) {
     throw new Error('Ya existe una escalera con ese nombre en el edificio.')
@@ -290,15 +300,15 @@ export async function actualizarEscalera(
 ): Promise<EscaleraResumen> {
   await delay()
   const escalera = solicitarEscalera(id)
-  const nombre = input.nombre.trim()
-  validarNombre(nombre, 'escalera')
+  const nombre = validarNombre(input.nombre, 'escalera', LIMITES.nombreEscalera)
+  const nombreNormalizado = normalizarParaComparar(nombre)
 
   if (
     escaleras.some(
       (item) =>
         item.id !== id &&
         item.edificioId === escalera.edificioId &&
-        item.nombre.toLowerCase() === nombre.toLowerCase(),
+        normalizarParaComparar(item.nombre) === nombreNormalizado,
     )
   ) {
     throw new Error('Ya existe una escalera con ese nombre en el edificio.')
@@ -327,19 +337,17 @@ export async function crearCuarto(
 ): Promise<CuartoResumen> {
   await delay()
   const escalera = solicitarEscalera(escaleraId)
-  const nombre = input.nombre.trim()
-  validarNombre(nombre, 'cuarto')
-
-  if (!Number.isInteger(input.capacidadMaxima) || input.capacidadMaxima <= 0) {
-    throw new Error('La capacidad del cuarto debe ser un número entero mayor que cero.')
-  }
+  const nombre = validarNombre(input.nombre, 'cuarto', LIMITES.nombreCuarto)
+  const nombreNormalizado = normalizarParaComparar(nombre)
+  const capacidad = validarCapacidad(input.capacidadMaxima)
 
   obtenerEstado(input.estadoConstructivoId)
 
   if (
     cuartos.some(
       (cuarto) =>
-        cuarto.escaleraId === escaleraId && cuarto.nombre.toLowerCase() === nombre.toLowerCase(),
+        cuarto.escaleraId === escaleraId &&
+        normalizarParaComparar(cuarto.nombre) === nombreNormalizado,
     )
   ) {
     throw new Error('Ya existe un cuarto con ese nombre en la escalera.')
@@ -348,7 +356,7 @@ export async function crearCuarto(
   const cuarto: CuartoRecord = {
     id: siguienteId(cuartos),
     nombre,
-    capacidadMaxima: input.capacidadMaxima,
+    capacidadMaxima: capacidad,
     escaleraId,
     estadoConstructivoId: input.estadoConstructivoId,
   }
@@ -363,15 +371,12 @@ export async function actualizarCuarto(
 ): Promise<CuartoResumen> {
   await delay()
   const cuarto = solicitarCuarto(id)
-  const nombre = input.nombre.trim()
-  validarNombre(nombre, 'cuarto')
-
-  if (!Number.isInteger(input.capacidadMaxima) || input.capacidadMaxima <= 0) {
-    throw new Error('La capacidad del cuarto debe ser un número entero mayor que cero.')
-  }
+  const nombre = validarNombre(input.nombre, 'cuarto', LIMITES.nombreCuarto)
+  const nombreNormalizado = normalizarParaComparar(nombre)
+  const capacidad = validarCapacidad(input.capacidadMaxima)
 
   const ocupados = ocupadosDeCuarto(id)
-  if (input.capacidadMaxima < ocupados) {
+  if (capacidad < ocupados) {
     throw new Error('La capacidad no puede ser menor que las plazas ocupadas.')
   }
 
@@ -382,14 +387,14 @@ export async function actualizarCuarto(
       (item) =>
         item.id !== id &&
         item.escaleraId === cuarto.escaleraId &&
-        item.nombre.toLowerCase() === nombre.toLowerCase(),
+        normalizarParaComparar(item.nombre) === nombreNormalizado,
     )
   ) {
     throw new Error('Ya existe un cuarto con ese nombre en la escalera.')
   }
 
   cuarto.nombre = nombre
-  cuarto.capacidadMaxima = input.capacidadMaxima
+  cuarto.capacidadMaxima = capacidad
   cuarto.estadoConstructivoId = input.estadoConstructivoId
   registrarEvento(`Actualización del cuarto ${nombre}`)
   return resumenCuarto(cuarto)
@@ -410,18 +415,16 @@ export async function eliminarCuarto(id: number): Promise<void> {
 export async function exportarReporteGeneral(): Promise<string> {
   await delay(100)
   const resumen = await obtenerResumen()
-  const lineas = [
-    'Edificio,Escaleras,Cuartos,Capacidad,Ocupados,Ocupacion (%)',
-    ...resumen.edificios.map((edificio) =>
-      [
-        edificio.nombre,
-        edificio.escaleras,
-        edificio.cuartos,
-        edificio.capacidad,
-        edificio.ocupados,
-        edificio.ocupacionPct,
-      ].join(','),
-    ),
+  const filas: CsvCell[][] = [
+    ['Edificio', 'Escaleras', 'Cuartos', 'Capacidad', 'Ocupados', 'Ocupación (%)'],
+    ...resumen.edificios.map((edificio) => [
+      edificio.nombre,
+      edificio.escaleras,
+      edificio.cuartos,
+      edificio.capacidad,
+      edificio.ocupados,
+      edificio.ocupacionPct,
+    ]),
     [
       'Total',
       resumen.totalEscaleras,
@@ -429,30 +432,49 @@ export async function exportarReporteGeneral(): Promise<string> {
       resumen.capacidadTotal,
       resumen.ocupados,
       resumen.ocupacionPct,
-    ].join(','),
+    ],
   ]
-  return lineas.join('\n')
+
+  return serializarCsv(filas)
 }
 
 export async function exportarCenso(edificioId: number): Promise<string> {
   await delay(100)
   const edificio = solicitarEdificio(edificioId)
-  const lineas = ['Edificio,Escalera,Cuarto,Capacidad,Ocupados,Estado']
+  const filas: CsvCell[][] = [
+    ['Edificio', 'Escalera', 'Cuarto', 'Capacidad', 'Ocupados', 'Estado'],
+  ]
 
   for (const cuarto of cuartosDeEdificio(edificioId)) {
     const escalera = escaleras.find((item) => item.id === cuarto.escaleraId)
     const estado = obtenerEstado(cuarto.estadoConstructivoId)
-    lineas.push(
-      [
-        edificio.nombre,
-        escalera?.nombre ?? 'Sin escalera',
-        cuarto.nombre,
-        cuarto.capacidadMaxima,
-        ocupadosDeCuarto(cuarto.id),
-        estado.nombre,
-      ].join(','),
-    )
+    filas.push([
+      edificio.nombre,
+      escalera?.nombre ?? 'Sin escalera',
+      cuarto.nombre,
+      cuarto.capacidadMaxima,
+      ocupadosDeCuarto(cuarto.id),
+      estado.nombre,
+    ])
   }
 
-  return lineas.join('\n')
+  return serializarCsv(filas)
+}
+
+export const demoInfraestructuraRepository: InfraestructuraRepository = {
+  obtenerEstadosConstructivos,
+  obtenerResumen,
+  obtenerEdificios,
+  obtenerEdificio,
+  crearEdificio,
+  actualizarEdificio,
+  eliminarEdificio,
+  crearEscalera,
+  actualizarEscalera,
+  eliminarEscalera,
+  crearCuarto,
+  actualizarCuarto,
+  eliminarCuarto,
+  exportarReporteGeneral,
+  exportarCenso,
 }

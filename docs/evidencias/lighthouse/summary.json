@@ -1,0 +1,42 @@
+{
+  "url": "http://127.0.0.1:4173/login",
+  "fetchedAt": "2026-11-01T22:16:48.393Z",
+  "scores": {
+    "performance": 0.91,
+    "accessibility": 1,
+    "best-practices": 1,
+    "seo": 0.91
+  },
+  "metrics": {
+    "first-contentful-paint": {
+      "score": 0.79,
+      "displayValue": "2.2 s"
+    },
+    "largest-contentful-paint": {
+      "score": 0.95,
+      "displayValue": "2.2 s"
+    },
+    "speed-index": {
+      "score": 0.99,
+      "displayValue": "2.2 s"
+    },
+    "total-blocking-time": {
+      "score": 0.8,
+      "displayValue": "290 ms"
+    },
+    "cumulative-layout-shift": {
+      "score": 1,
+      "displayValue": "0"
+    },
+    "interactive": {
+      "score": 0.98,
+      "displayValue": "2.6 s"
+    }
+  },
+  "csp": [
+    {
+      "severity": "High",
+      "description": "No CSP found in enforcement mode"
+    }
+  ]
+}

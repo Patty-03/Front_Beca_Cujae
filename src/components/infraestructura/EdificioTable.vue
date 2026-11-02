@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { EdificioResumen } from '@/types/infraestructura'
+import { computed } from 'vue'
 import { EyeIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -12,10 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useAuthStore } from '@/stores/auth'
 import EstadoConstructivoBadge from './EstadoConstructivoBadge.vue'
 import OcupacionBar from './OcupacionBar.vue'
 
 const props = defineProps<{ edificios: EdificioResumen[] }>()
+const auth = useAuthStore()
+const puedeEscribir = computed(() => auth.can('infraestructura:write'))
 const emit = defineEmits<{
   editar: [edificio: EdificioResumen]
   eliminar: [edificio: EdificioResumen]
@@ -55,6 +59,7 @@ const emit = defineEmits<{
               <OcupacionBar
                 :ocupados="edificio.ocupados"
                 :capacidad="edificio.capacidad"
+                :etiqueta="`Ocupación de ${edificio.nombre}`"
                 compacto
               />
             </TableCell>
@@ -69,6 +74,7 @@ const emit = defineEmits<{
                   </RouterLink>
                 </Button>
                 <Button
+                  v-if="puedeEscribir"
                   variant="ghost"
                   size="icon-sm"
                   :aria-label="`Editar ${edificio.nombre}`"
@@ -77,16 +83,22 @@ const emit = defineEmits<{
                   <PencilIcon />
                 </Button>
                 <Button
+                  v-if="puedeEscribir"
                   variant="ghost"
                   size="icon-sm"
-                  class="text-destructive hover:text-destructive"
-                  :disabled="edificio.escaleras > 0"
+                  class="text-destructive hover:text-destructive size-11 lg:size-8"
+                  :class="{ 'cursor-not-allowed opacity-50': edificio.escaleras > 0 }"
+                  :aria-disabled="edificio.escaleras > 0"
                   :title="
                     edificio.escaleras > 0
                       ? 'No se puede eliminar: tiene escaleras registradas'
                       : 'Eliminar edificio'
                   "
-                  :aria-label="`Eliminar ${edificio.nombre}`"
+                  :aria-label="
+                    edificio.escaleras > 0
+                      ? `No se puede eliminar ${edificio.nombre}: tiene escaleras registradas`
+                      : `Eliminar ${edificio.nombre}`
+                  "
                   @click="emit('eliminar', edificio)"
                 >
                   <Trash2Icon />
@@ -116,7 +128,11 @@ const emit = defineEmits<{
             <EstadoConstructivoBadge :estado="edificio.estado" />
           </div>
 
-          <OcupacionBar :ocupados="edificio.ocupados" :capacidad="edificio.capacidad" />
+          <OcupacionBar
+            :ocupados="edificio.ocupados"
+            :capacidad="edificio.capacidad"
+            :etiqueta="`Ocupación de ${edificio.nombre}`"
+          />
 
           <div class="flex items-center justify-end gap-1">
             <Button as-child variant="outline" size="sm">
@@ -125,14 +141,28 @@ const emit = defineEmits<{
                 Ver
               </RouterLink>
             </Button>
-            <Button variant="ghost" size="icon-sm" @click="emit('editar', edificio)">
+            <Button
+              v-if="puedeEscribir"
+              variant="ghost"
+              size="icon-sm"
+              class="size-11"
+              :aria-label="`Editar ${edificio.nombre}`"
+              @click="emit('editar', edificio)"
+            >
               <PencilIcon />
             </Button>
             <Button
+              v-if="puedeEscribir"
               variant="ghost"
               size="icon-sm"
-              class="text-destructive hover:text-destructive"
-              :disabled="edificio.escaleras > 0"
+              class="text-destructive hover:text-destructive size-11"
+              :class="{ 'cursor-not-allowed opacity-50': edificio.escaleras > 0 }"
+              :aria-disabled="edificio.escaleras > 0"
+              :aria-label="
+                edificio.escaleras > 0
+                  ? `No se puede eliminar ${edificio.nombre}: tiene escaleras registradas`
+                  : `Eliminar ${edificio.nombre}`
+              "
               @click="emit('eliminar', edificio)"
             >
               <Trash2Icon />

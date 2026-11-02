@@ -29,7 +29,10 @@ import {
   obtenerEstadosConstructivos,
   obtenerResumen,
 } from '@/services/infraestructura'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
+const puedeEscribir = computed(() => auth.can('infraestructura:write'))
 const resumen = ref<InfraestructuraResumen | null>(null)
 const estados = ref<EstadoConstructivo[]>([])
 const cargando = ref(true)
@@ -111,7 +114,7 @@ onMounted(cargar)
           <DownloadIcon />
           Exportar reporte
         </Button>
-        <Button @click="dialogoAbierto = true">
+        <Button v-if="puedeEscribir" @click="dialogoAbierto = true">
           <PlusIcon />
           Nuevo edificio
         </Button>
@@ -193,6 +196,7 @@ onMounted(cargar)
               <OcupacionBar
                 :ocupados="edificio.ocupados"
                 :capacidad="edificio.capacidad"
+                :etiqueta="`Ocupación de ${edificio.nombre}`"
                 compacto
               />
             </div>
@@ -298,7 +302,12 @@ onMounted(cargar)
             <CardDescription>Atajos para las tareas más frecuentes.</CardDescription>
           </CardHeader>
           <CardContent class="grid gap-2">
-            <Button variant="outline" class="justify-start" @click="dialogoAbierto = true">
+            <Button
+              v-if="puedeEscribir"
+              variant="outline"
+              class="justify-start"
+              @click="dialogoAbierto = true"
+            >
               <PlusIcon />
               Registrar edificio
             </Button>

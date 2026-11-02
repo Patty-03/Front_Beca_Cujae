@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { LIMITES, validarNombre } from '@/lib/validation'
 import { actualizarEdificio, crearEdificio } from '@/services/infraestructura'
 
 const props = defineProps<{
@@ -48,13 +49,16 @@ watch(open, (abierto) => {
 
 async function guardar() {
   error.value = ''
-  const nombreLimpio = nombre.value.trim()
-  const idEstado = Number(estadoId.value)
+  let nombreLimpio = ''
 
-  if (nombreLimpio.length < 3) {
-    error.value = 'El nombre del edificio debe tener al menos 3 caracteres.'
+  try {
+    nombreLimpio = validarNombre(nombre.value, 'edificio', LIMITES.nombreEdificio)
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'El nombre no es válido.'
     return
   }
+
+  const idEstado = Number(estadoId.value)
 
   if (!idEstado) {
     error.value = 'Seleccione un estado constructivo.'
@@ -109,13 +113,20 @@ async function guardar() {
             placeholder="Ej. Edificio I"
             maxlength="80"
             autocomplete="off"
+            :aria-invalid="Boolean(error)"
+            :aria-describedby="error ? 'edificio-error' : undefined"
           />
         </div>
 
         <div class="grid gap-2">
           <Label for="edificio-estado">Estado constructivo</Label>
           <Select v-model="estadoId">
-            <SelectTrigger id="edificio-estado" class="w-full">
+            <SelectTrigger
+              id="edificio-estado"
+              class="w-full"
+              :aria-invalid="Boolean(error)"
+              :aria-describedby="error ? 'edificio-error' : undefined"
+            >
               <SelectValue placeholder="Seleccione un estado" />
             </SelectTrigger>
             <SelectContent>
@@ -130,7 +141,9 @@ async function guardar() {
           </Select>
         </div>
 
-        <p v-if="error" class="text-destructive text-sm">{{ error }}</p>
+        <p v-if="error" id="edificio-error" role="alert" class="text-destructive text-sm">
+          {{ error }}
+        </p>
 
         <DialogFooter>
           <DialogClose as-child>

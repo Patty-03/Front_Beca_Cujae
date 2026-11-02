@@ -1,0 +1,15 @@
+﻿Edificio,Escaleras,Cuartos,Capacidad,Ocupados,Ocupacion (%)
+Edificio A,4,60,240,195,81
+Edificio B,4,60,240,144,60
+Edificio C,4,60,240,159,66
+Edificio D,4,60,240,105,44
+Edificio E,4,60,240,54,23
+Edificio F,4,60,240,195,81
+Edificio G,4,60,240,141,59
+Edificio H,4,60,240,105,44
+=HYPERLINK("http://example.com","click") 1793571245923,0,0,0,0,0
+Audit,CSV "X" 1793571245923,0,0,0,0,0
++SUM(1+1) 1793571245923,0,0,0,0,0
+-2+3 1793571245923,0,0,0,0,0
+@SUM(1+1) 1793571245923,0,0,0,0,0
+Total,32,480,1920,1098,57
