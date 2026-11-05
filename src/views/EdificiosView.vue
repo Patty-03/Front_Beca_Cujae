@@ -227,7 +227,7 @@ onMounted(cargar)
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <Button v-if="puedeEscribir" variant="outline" @click="abrirNuevoCuarto">
+        <Button variant="outline" @click="abrirNuevoCuarto">
           <DoorOpenIcon />
           Agregar cuarto
         </Button>
