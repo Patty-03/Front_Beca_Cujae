@@ -35,7 +35,8 @@ import {
 import { Label } from '@/components/ui/label'
 import ConfirmDialog from '@/components/infraestructura/ConfirmDialog.vue'
 import CuartoDialog from '@/components/infraestructura/CuartoDialog.vue'
-import EdificioDialog from '@/components/infraestructura/EdificioDialog.vue'
+import ImportarInfraestructuraDialog from '@/components/infraestructura/ImportarInfraestructuraDialog.vue'
+import { FileUpIcon } from '@lucide/vue'
 import EdificioTable from '@/components/infraestructura/EdificioTable.vue'
 import KpiCard from '@/components/infraestructura/KpiCard.vue'
 import { obtenerEdificio } from '@/services/infraestructura'
@@ -56,6 +57,7 @@ const error = ref('')
 const busqueda = ref('')
 const estadoFiltro = ref('todos')
 const dialogoAbierto = ref(false)
+const importarAbierto = ref(false)
 const edificioEditando = ref<EdificioResumen | null>(null)
 const edificioEliminando = ref<EdificioResumen | null>(null)
 const confirmacionAbierta = ref(false)
@@ -111,6 +113,12 @@ function continuarACuartoDialog() {
 
 function alGuardarCuarto() {
   dialogoCuartoRealAbierto.value = false
+  void cargar()
+}
+
+function alImportar() {
+  toast.success('Inventario actualizado')
+  importarAbierto.value = false
   void cargar()
 }
 
@@ -227,6 +235,10 @@ onMounted(cargar)
         </p>
       </div>
       <div class="flex items-center gap-2">
+        <Button v-if="puedeEscribir" variant="outline" @click="importarAbierto = true">
+          <FileUpIcon />
+          Importar Excel
+        </Button>
         <Button variant="outline" @click="abrirNuevoCuarto">
           <DoorOpenIcon />
           Agregar cuarto
@@ -371,6 +383,12 @@ onMounted(cargar)
       :estados="estados"
       :edificio="edificioEditando"
       @guardado="alGuardar"
+    />
+
+    <ImportarInfraestructuraDialog
+      v-model:open="importarAbierto"
+      :estados="estados"
+      @importado="alImportar"
     />
 
     <Dialog v-model:open="cuartoAbierto">
