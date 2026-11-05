@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { EstadoBeca, EstudianteResumen } from '@/types/estudiante'
-import { BedDoubleIcon, ClipboardListIcon, EyeIcon } from '@lucide/vue'
+import { computed } from 'vue'
+import { BedDoubleIcon, ClipboardListIcon, EyeIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
+import { useAuthStore } from '@/stores/auth'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,9 +21,14 @@ const props = defineProps<{
   puedeAsignar: boolean
 }>()
 
+const auth = useAuthStore()
+const puedeEscribir = computed(() => auth.can('estudiantes:write'))
+
 const emit = defineEmits<{
   ver: [estudiante: EstudianteResumen]
   asignar: [estudiante: EstudianteResumen]
+  editar: [estudiante: EstudianteResumen]
+  eliminar: [estudiante: EstudianteResumen]
 }>()
 
 function varianteEstado(estado: EstadoBeca): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -105,27 +112,46 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
                 </span>
               </div>
             </TableCell>
-            <TableCell>
-              <div class="flex items-center justify-end gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  :aria-label="`Ver ${estudiante.nombre}`"
-                  @click="emit('ver', estudiante)"
-                >
-                  <EyeIcon />
-                </Button>
-                <Button
-                  v-if="puedeAsignarA(estudiante)"
-                  variant="outline"
-                  size="sm"
-                  @click="emit('asignar', estudiante)"
-                >
-                  <BedDoubleIcon />
-                  {{ estudiante.asignacion ? 'Cambiar' : 'Asignar' }}
-                </Button>
-              </div>
-            </TableCell>
+             <TableCell>
+               <div class="flex items-center justify-end gap-1">
+                 <Button
+                   variant="ghost"
+                   size="icon-sm"
+                   :aria-label="`Ver ${estudiante.nombre}`"
+                   @click="emit('ver', estudiante)"
+                 >
+                   <EyeIcon />
+                 </Button>
+                 <Button
+                   v-if="puedeEscribir"
+                   variant="ghost"
+                   size="icon-sm"
+                   :aria-label="`Editar ${estudiante.nombre}`"
+                   @click="emit('editar', estudiante)"
+                 >
+                   <PencilIcon />
+                 </Button>
+                 <Button
+                   v-if="puedeEscribir"
+                   variant="ghost"
+                   size="icon-sm"
+                   class="text-destructive hover:text-destructive"
+                   :aria-label="`Eliminar ${estudiante.nombre}`"
+                   @click="emit('eliminar', estudiante)"
+                 >
+                   <Trash2Icon />
+                 </Button>
+                 <Button
+                   v-if="puedeAsignarA(estudiante)"
+                   variant="outline"
+                   size="sm"
+                   @click="emit('asignar', estudiante)"
+                 >
+                   <BedDoubleIcon />
+                   {{ estudiante.asignacion ? 'Cambiar' : 'Asignar' }}
+                 </Button>
+               </div>
+             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -172,6 +198,26 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
             <Button variant="outline" size="sm" @click="emit('ver', estudiante)">
               <EyeIcon />
               Ver
+            </Button>
+            <Button
+              v-if="puedeEscribir"
+              variant="ghost"
+              size="icon-sm"
+              class="size-9"
+              :aria-label="`Editar ${estudiante.nombre}`"
+              @click="emit('editar', estudiante)"
+            >
+              <PencilIcon />
+            </Button>
+            <Button
+              v-if="puedeEscribir"
+              variant="ghost"
+              size="icon-sm"
+              class="text-destructive hover:text-destructive size-9"
+              :aria-label="`Eliminar ${estudiante.nombre}`"
+              @click="emit('eliminar', estudiante)"
+            >
+              <Trash2Icon />
             </Button>
             <Button
               v-if="puedeAsignarA(estudiante)"

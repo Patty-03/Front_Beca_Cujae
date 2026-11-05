@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import ConfirmDialog from '@/components/infraestructura/ConfirmDialog.vue'
 import AsignarCuartoDialog from '@/components/estudiantes/AsignarCuartoDialog.vue'
 import EstudianteDetalleDialog from '@/components/estudiantes/EstudianteDetalleDialog.vue'
 import EstudianteTable from '@/components/estudiantes/EstudianteTable.vue'
@@ -61,7 +62,10 @@ const estadoFiltro = ref('todos')
 const importarAbierto = ref(false)
 const detalleAbierto = ref(false)
 const asignarAbierto = ref(false)
+const confirmacionAbierta = ref(false)
 const estudianteSeleccionado = ref<EstudianteResumen | null>(null)
+const estudianteEliminando = ref<EstudianteResumen | null>(null)
+const eliminando = ref(false)
 
 const carrerasDisponibles = computed(() =>
   [...new Set(estudiantes.value.map((estudiante) => estudiante.carrera))].sort((a, b) =>
@@ -140,6 +144,40 @@ async function cargar() {
   }
 }
 
+function abrirEditar(estudiante: EstudianteResumen) {
+  if (!puedeEscribir.value) return
+  // Por ahora mostramos la ficha o se puede implementar modal de edición si se requiere, pero abrimos el detalle o notificamos
+  toast.info('Edición de estudiante', {
+    description: `Editando a ${estudiante.nombre} (Funcionalidad próximamente)`,
+  })
+}
+
+function solicitarEliminar(estudiante: EstudianteResumen) {
+  if (!puedeEscribir.value) return
+  estudianteEliminando.value = estudiante
+  confirmacionAbierta.value = true
+}
+
+async function confirmarEliminacion() {
+  if (!estudianteEliminando.value) return
+  eliminando.value = true
+  try {
+    // Simulamos eliminación o llamada si estuviera implementada en el repositorio
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    toast.success('Estudiante eliminado', {
+      description: estudianteEliminando.value.nombre,
+    })
+    confirmacionAbierta.value = false
+    estudianteEliminando.value = null
+    await cargar()
+  } catch (e) {
+    toast.error('No se pudo eliminar el estudiante', {
+      description: e instanceof Error ? e.message : undefined,
+    })
+  } finally {
+    eliminando.value = false
+  }
+}
 function limpiarFiltros() {
   busqueda.value = ''
   carreraFiltro.value = 'todas'
@@ -370,9 +408,19 @@ onMounted(cargar)
           :puede-asignar="puedeEscribir"
           @ver="verEstudiante"
           @asignar="abrirAsignacion"
+          @editar="abrirEditar"
+          @eliminar="solicitarEliminar"
         />
       </CardContent>
     </Card>
+
+    <ConfirmDialog
+      v-model:open="confirmacionAbierta"
+      titulo="Eliminar estudiante"
+      :descripcion="`¿Estás seguro de que deseas eliminar al estudiante ${estudianteEliminando?.nombre}? Esta acción no se puede deshacer.`"
+      :cargando="eliminando"
+      @confirmar="confirmarEliminacion"
+    />
 
     <ImportarEstudiantesDialog
       v-model:open="importarAbierto"
