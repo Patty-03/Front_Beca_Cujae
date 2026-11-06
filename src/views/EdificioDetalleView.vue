@@ -93,6 +93,13 @@ const cuartosNoHabitables = computed(
   () => cuartos.value.filter((cuarto) => !cuarto.estado.habitable).length,
 )
 
+const porcentajeHabitables = computed(() => {
+  const total = cuartos.value.length
+  if (!total) return null
+  const habitables = total - cuartosNoHabitables.value
+  return Math.round((habitables / total) * 100)
+})
+
 const busquedaCuarto = ref('')
 const estadoCuartoFiltro = ref('todos')
 const escaleraCuartoFiltro = ref('todas')
@@ -349,8 +356,8 @@ watch(id, cargar, { immediate: true })
         <Skeleton class="h-8 w-56" />
         <Skeleton class="h-4 w-80 max-w-full" />
       </div>
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Skeleton v-for="indice in 4" :key="indice" class="h-28 rounded-xl" />
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <Skeleton v-for="indice in 5" :key="indice" class="h-28 rounded-xl" />
       </div>
       <Skeleton class="h-96 rounded-xl" />
     </div>
@@ -391,7 +398,7 @@ watch(id, cargar, { immediate: true })
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard
           label="Capacidad"
           :value="formatNumber(detalle.capacidad)"
@@ -419,6 +426,17 @@ watch(id, cargar, { immediate: true })
           detail="Cuartos fuera de uso"
           :icon="CircleAlertIcon"
           tono="amber"
+        />
+        <KpiCard
+          label="Habitables"
+          :value="porcentajeHabitables !== null ? formatPercent(porcentajeHabitables) : '—'"
+          :detail="
+            cuartos.length
+              ? `${cuartos.length - cuartosNoHabitables} de ${cuartos.length} cuartos`
+              : 'Sin cuartos registrados'
+          "
+          :icon="DoorOpenIcon"
+          tono="emerald"
         />
       </div>
 
