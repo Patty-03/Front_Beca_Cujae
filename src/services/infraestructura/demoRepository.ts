@@ -34,6 +34,8 @@ import {
   validarCapacidad,
   validarNombre,
 } from '@/lib/validation'
+import { calcularEstadoEdificio } from '@/lib/estadoConstructivoEdificio'
+import { useUmbralesEdificiosStore } from '@/stores/umbralesEdificios'
 import { useAuthStore } from '@/stores/auth'
 import type { InfraestructuraRepository } from './contracts'
 
@@ -102,10 +104,25 @@ const resumenEdificio = (edificio: EdificioRecord): EdificioResumen => {
   const propios = cuartosDeEdificio(edificio.id)
   const capacidad = propios.reduce((total, cuarto) => total + cuarto.capacidadMaxima, 0)
   const ocupados = propios.reduce((total, cuarto) => total + ocupadosDeCuarto(cuarto.id), 0)
+  const cuartosResumen = propios.map(resumenCuarto)
+  
+  let estadoCalculado = obtenerEstado(edificio.estadoConstructivoId)
+  try {
+    const umbralesStore = useUmbralesEdificiosStore()
+    estadoCalculado = calcularEstadoEdificio(
+      cuartosResumen,
+      estadosConstructivos,
+      umbralesStore.umbrales.pctBueno,
+      umbralesStore.umbrales.pctRegular,
+    )
+  } catch {
+    // Si pinia no está activo en algún contexto aislado
+  }
+
   return {
     id: edificio.id,
     nombre: edificio.nombre,
-    estado: obtenerEstado(edificio.estadoConstructivoId),
+    estado: estadoCalculado,
     escaleras: escaleras.filter((escalera) => escalera.edificioId === edificio.id).length,
     cuartos: propios.length,
     capacidad,

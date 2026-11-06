@@ -35,7 +35,7 @@ import {
 import { Label } from '@/components/ui/label'
 import ConfirmDialog from '@/components/infraestructura/ConfirmDialog.vue'
 import CuartoDialog from '@/components/infraestructura/CuartoDialog.vue'
-import ImportarInfraestructuraDialog from '@/components/infraestructura/ImportarInfraestructuraDialog.vue'
+import ConfiguracionCriteriosCard from '@/components/infraestructura/ConfiguracionCriteriosCard.vue'
 import { FileUpIcon } from '@lucide/vue'
 import EdificioTable from '@/components/infraestructura/EdificioTable.vue'
 import KpiCard from '@/components/infraestructura/KpiCard.vue'
@@ -291,6 +291,8 @@ onMounted(cargar)
         tono="amber"
       />
     </div>
+
+    <ConfiguracionCriteriosCard />
 
     <Card>
       <CardHeader>
