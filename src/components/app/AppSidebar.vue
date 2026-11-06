@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   Building2Icon,
+  ChevronRightIcon,
   ChevronsUpDownIcon,
   ClipboardCheckIcon,
   ClipboardListIcon,
@@ -12,16 +13,10 @@ import {
   LogOutIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -46,6 +41,7 @@ interface NavItem {
   icon: Component
   exact?: boolean
   permission?: Permission
+  children?: { label: string; to: string }[]
 }
 
 interface NavGroup {
@@ -72,6 +68,10 @@ const navigation: NavGroup[] = [
         icon: Building2Icon,
         exact: true,
         permission: 'infraestructura:read',
+        children: [
+          { label: 'General / Resumen', to: '/infraestructura' },
+          { label: 'Edificios', to: '/infraestructura/edificios' },
+        ],
       },
       {
         label: 'Deberes',
@@ -93,17 +93,6 @@ const navigation: NavGroup[] = [
         icon: ClipboardCheckIcon,
         exact: true,
         permission: 'evaluaciones:read',
-      },
-    ],
-  },
-  {
-    label: 'Infraestructura',
-    items: [
-      {
-        label: 'Edificios',
-        to: '/infraestructura/edificios',
-        icon: Building2Icon,
-        permission: 'infraestructura:read',
       },
     ],
   },
@@ -180,14 +169,37 @@ async function handleLogout() {
         <SidebarGroupLabel>{{ group.label }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem v-for="item in group.items" :key="item.to">
-              <SidebarMenuButton :is-active="esRutaActiva(item)" :tooltip="item.label" as-child>
-                <RouterLink :to="item.to" @click="handleNavigate">
-                  <component :is="item.icon" />
-                  <span>{{ item.label }}</span>
-                </RouterLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <template v-for="item in group.items" :key="item.to">
+              <template v-if="item.children">
+                <SidebarMenuItem>
+                  <SidebarMenuButton :is-active="esRutaActiva(item)" :tooltip="item.label" as-child>
+                    <RouterLink :to="item.to" @click="handleNavigate">
+                      <component :is="item.icon" />
+                      <span>{{ item.label }}</span>
+                    </RouterLink>
+                  </SidebarMenuButton>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem v-for="child in item.children" :key="child.to">
+                      <SidebarMenuSubButton :is-active="route.path === child.to" as-child>
+                        <RouterLink :to="child.to" @click="handleNavigate">
+                          <span>{{ child.label }}</span>
+                        </RouterLink>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </SidebarMenuItem>
+              </template>
+              <template v-else>
+                <SidebarMenuItem>
+                  <SidebarMenuButton :is-active="esRutaActiva(item)" :tooltip="item.label" as-child>
+                    <RouterLink :to="item.to" @click="handleNavigate">
+                      <component :is="item.icon" />
+                      <span>{{ item.label }}</span>
+                    </RouterLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </template>
+            </template>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
