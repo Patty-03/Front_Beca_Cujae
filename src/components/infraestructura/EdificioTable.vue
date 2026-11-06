@@ -78,36 +78,39 @@ const emit = defineEmits<{
                     <EyeIcon />
                   </RouterLink>
                 </Button>
-                <Button
-                  v-if="puedeEscribir"
-                  variant="ghost"
-                  size="icon-sm"
-                  :aria-label="`Editar ${edificio.nombre}`"
-                  @click="emit('editar', edificio)"
-                >
-                  <PencilIcon />
-                </Button>
-                <Button
-                  v-if="puedeEscribir"
-                  variant="ghost"
-                  size="icon-sm"
-                  class="text-destructive hover:text-destructive size-11 lg:size-8"
-                  :class="{ 'cursor-not-allowed opacity-50': edificio.escaleras > 0 }"
-                  :aria-disabled="edificio.escaleras > 0"
-                  :title="
-                    edificio.escaleras > 0
-                      ? 'No se puede eliminar: tiene escaleras registradas'
-                      : 'Eliminar edificio'
-                  "
-                  :aria-label="
-                    edificio.escaleras > 0
-                      ? `No se puede eliminar ${edificio.nombre}: tiene escaleras registradas`
-                      : `Eliminar ${edificio.nombre}`
-                  "
-                  @click="emit('eliminar', edificio)"
-                >
-                  <Trash2Icon />
-                </Button>
+                 <Button
+                   v-if="puedeEscribir"
+                   type="button"
+                   variant="ghost"
+                   size="icon-sm"
+                   class="cursor-pointer"
+                   :aria-label="`Editar ${edificio.nombre}`"
+                   @click.stop="emit('editar', edificio)"
+                 >
+                   <PencilIcon />
+                 </Button>
+                 <Button
+                   v-if="puedeEscribir"
+                   type="button"
+                   variant="ghost"
+                   size="icon-sm"
+                   class="text-destructive hover:text-destructive size-11 lg:size-8 cursor-pointer"
+                   :class="{ 'cursor-not-allowed opacity-50': edificio.escaleras > 0 }"
+                   :aria-disabled="edificio.escaleras > 0"
+                   :title="
+                     edificio.escaleras > 0
+                       ? 'No se puede eliminar: tiene escaleras registradas'
+                       : 'Eliminar edificio'
+                   "
+                   :aria-label="
+                     edificio.escaleras > 0
+                       ? `No se puede eliminar ${edificio.nombre}: tiene escaleras registradas`
+                       : `Eliminar ${edificio.nombre}`
+                   "
+                   @click.stop="emit('eliminar', edificio)"
+                 >
+                   <Trash2Icon />
+                 </Button>
               </div>
             </TableCell>
           </TableRow>
@@ -148,19 +151,21 @@ const emit = defineEmits<{
             </Button>
             <Button
               v-if="puedeEscribir"
+              type="button"
               variant="ghost"
               size="icon-sm"
-              class="size-11"
+              class="size-11 cursor-pointer"
               :aria-label="`Editar ${edificio.nombre}`"
-              @click="emit('editar', edificio)"
+              @click.stop="emit('editar', edificio)"
             >
               <PencilIcon />
             </Button>
             <Button
               v-if="puedeEscribir"
+              type="button"
               variant="ghost"
               size="icon-sm"
-              class="text-destructive hover:text-destructive size-11"
+              class="text-destructive hover:text-destructive size-11 cursor-pointer"
               :class="{ 'cursor-not-allowed opacity-50': edificio.escaleras > 0 }"
               :aria-disabled="edificio.escaleras > 0"
               :aria-label="
@@ -168,7 +173,7 @@ const emit = defineEmits<{
                   ? `No se puede eliminar ${edificio.nombre}: tiene escaleras registradas`
                   : `Eliminar ${edificio.nombre}`
               "
-              @click="emit('eliminar', edificio)"
+              @click.stop="emit('eliminar', edificio)"
             >
               <Trash2Icon />
             </Button>
