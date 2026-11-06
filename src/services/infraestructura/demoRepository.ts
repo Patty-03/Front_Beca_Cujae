@@ -264,7 +264,7 @@ export async function actualizarEdificio(
   const nombre = validarNombre(input.nombre, 'edificio', LIMITES.nombreEdificio)
   const nombreNormalizado = normalizarParaComparar(nombre)
   const estadoId = input.estadoConstructivoId ?? edificio.estadoConstructivoId
-  obtenerEstado(estadoId)
+  const estadoEdificioObj = obtenerEstado(estadoId)
 
   if (
     edificios.some(
@@ -279,6 +279,18 @@ export async function actualizarEdificio(
   edificio.estadoConstructivoId = estadoId
   edificio.estadoManual = Boolean(input.estadoManual)
   edificio.observacionEstado = input.observacionEstado
+
+  // Si el edificio pasa a ser inhabitado/no habitable, marcar sus cuartos como no habitables (ej. estado 3 o 4)
+  if (!estadoEdificioObj.habitable) {
+    const estadoInhabitable = estadosConstructivos.find((e) => !e.habitable) ?? estadoEdificioObj
+    const escalerasIds = new Set(escaleras.filter((es) => es.edificioId === id).map((es) => es.id))
+    for (const cuarto of cuartos) {
+      if (escalerasIds.has(cuarto.escaleraId)) {
+        cuarto.estadoConstructivoId = estadoInhabitable.id
+      }
+    }
+  }
+
   registrarEvento(`Actualización del ${nombre}`)
   return resumenEdificio(edificio)
 }
