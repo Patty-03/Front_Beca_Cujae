@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CuartoResumen } from '@/types/infraestructura'
 import { computed } from 'vue'
-import { PencilIcon, Trash2Icon } from '@lucide/vue'
+import { ArchiveIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -22,6 +22,7 @@ const puedeEscribir = computed(() => auth.can('infraestructura:write'))
 const emit = defineEmits<{
   editar: [cuarto: CuartoResumen]
   eliminar: [cuarto: CuartoResumen]
+  medios: [cuarto: CuartoResumen]
 }>()
 </script>
 
@@ -61,6 +62,16 @@ const emit = defineEmits<{
             </TableCell>
             <TableCell>
               <div class="flex items-center justify-end gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  class="size-11 lg:size-8"
+                  :aria-label="`Medios del cuarto ${cuarto.nombre}`"
+                  title="Medios del cuarto"
+                  @click="emit('medios', cuarto)"
+                >
+                  <ArchiveIcon />
+                </Button>
                 <Button
                   v-if="puedeEscribir"
                   variant="ghost"
@@ -121,6 +132,14 @@ const emit = defineEmits<{
           />
 
           <div class="flex items-center justify-end gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              @click="emit('medios', cuarto)"
+            >
+              <ArchiveIcon />
+              Medios
+            </Button>
             <Button
               v-if="puedeEscribir"
               variant="outline"

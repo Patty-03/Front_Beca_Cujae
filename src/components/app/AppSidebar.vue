@@ -79,6 +79,7 @@ const navigation: NavGroup[] = [
         children: [
           { label: 'General / Resumen', to: '/infraestructura' },
           { label: 'Edificios', to: '/infraestructura/edificios' },
+          { label: 'Inventario de medios', to: '/infraestructura/inventario' },
         ],
       },
       {

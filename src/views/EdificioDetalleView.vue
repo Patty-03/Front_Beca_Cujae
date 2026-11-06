@@ -45,6 +45,7 @@ import EscaleraDialog from '@/components/infraestructura/EscaleraDialog.vue'
 import EstadoConstructivoBadge from '@/components/infraestructura/EstadoConstructivoBadge.vue'
 import KpiCard from '@/components/infraestructura/KpiCard.vue'
 import OcupacionBar from '@/components/infraestructura/OcupacionBar.vue'
+import MediosDeCuartoDialog from '@/components/inventario/MediosDeCuartoDialog.vue'
 import { descargarCsv } from '@/lib/download'
 import { colorEstadoConstructivo } from '@/lib/estadoConstructivo'
 import { formatNumber, formatPercent } from '@/lib/format'
@@ -72,6 +73,8 @@ const tab = ref('general')
 const editarAbierto = ref(false)
 const escaleraAbierta = ref(false)
 const cuartoAbierto = ref(false)
+const mediosAbierto = ref(false)
+const cuartoMedios = ref<CuartoResumen | null>(null)
 const escaleraEditando = ref<EscaleraResumen | null>(null)
 const cuartoEditando = ref<CuartoResumen | null>(null)
 const escaleraInicial = ref<number | undefined>(undefined)
@@ -230,6 +233,11 @@ function abrirEditarCuarto(cuarto: CuartoResumen) {
   cuartoEditando.value = cuarto
   escaleraInicial.value = cuarto.escaleraId
   cuartoAbierto.value = true
+}
+
+function abrirMediosCuarto(cuarto: CuartoResumen) {
+  cuartoMedios.value = cuarto
+  mediosAbierto.value = true
 }
 
 function solicitarEliminar(tipo: 'escalera' | 'cuarto', entidad: EscaleraResumen | CuartoResumen) {
@@ -718,6 +726,7 @@ watch(id, cargar, { immediate: true })
               :cuartos="cuartosPagina"
               @editar="abrirEditarCuarto"
               @eliminar="solicitarEliminar('cuarto', $event)"
+              @medios="abrirMediosCuarto"
             />
             <div
               v-else-if="cuartos.length"
@@ -882,6 +891,8 @@ watch(id, cargar, { immediate: true })
       :escalera-id-inicial="escaleraInicial"
       @guardado="alGuardarCuarto"
     />
+
+    <MediosDeCuartoDialog v-model:open="mediosAbierto" :cuarto="cuartoMedios" />
 
     <ConfirmDialog
       v-model:open="confirmacionAbierta"

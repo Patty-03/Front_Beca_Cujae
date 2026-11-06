@@ -93,6 +93,16 @@ const router = createRouter({
           },
         },
         {
+          path: 'infraestructura/inventario',
+          name: 'inventario',
+          component: () => import('@/views/InventarioView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['infraestructura:read'],
+            title: 'Inventario de medios',
+          },
+        },
+        {
           path: 'infraestructura/edificios/:id',
           name: 'edificio-detalle',
           component: () => import('@/views/EdificioDetalleView.vue'),
