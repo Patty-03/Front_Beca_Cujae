@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -22,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { LIMITES, validarCapacidad, validarNombre } from '@/lib/validation'
+import { LIMITES, validarCapacidad, validarDescripcion, validarNombre } from '@/lib/validation'
 import { actualizarCuarto, crearCuarto } from '@/services/infraestructura'
 
 const props = defineProps<{
@@ -39,6 +40,7 @@ const nombre = ref('')
 const capacidad = ref('4')
 const estadoId = ref('')
 const escaleraId = ref('')
+const descripcion = ref('')
 const error = ref('')
 const guardando = ref(false)
 
@@ -52,6 +54,7 @@ watch(open, (abierto) => {
   escaleraId.value = String(
     props.cuarto?.escaleraId ?? props.escaleraIdInicial ?? props.escaleras[0]?.id ?? '',
   )
+  descripcion.value = props.cuarto?.descripcion ?? ''
   error.value = ''
 })
 
@@ -59,10 +62,12 @@ async function guardar() {
   error.value = ''
   let nombreLimpio = ''
   let capacidadNumero = 0
+  let descripcionLimpia: string | undefined
 
   try {
     nombreLimpio = validarNombre(nombre.value, 'cuarto', LIMITES.nombreCuarto)
     capacidadNumero = validarCapacidad(capacidad.value)
+    descripcionLimpia = validarDescripcion(descripcion.value)
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'Los datos no son válidos.'
     return
@@ -93,11 +98,13 @@ async function guardar() {
           nombre: nombreLimpio,
           capacidadMaxima: capacidadNumero,
           estadoConstructivoId: idEstado,
+          descripcion: descripcionLimpia,
         })
       : await crearCuarto(idEscalera, {
           nombre: nombreLimpio,
           capacidadMaxima: capacidadNumero,
           estadoConstructivoId: idEstado,
+          descripcion: descripcionLimpia,
         })
 
     toast.success(esEdicion.value ? 'Cuarto actualizado' : 'Cuarto registrado', {
@@ -178,6 +185,18 @@ async function guardar() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div class="grid gap-2">
+          <Label for="cuarto-descripcion">Descripción</Label>
+          <Textarea
+            id="cuarto-descripcion"
+            v-model="descripcion"
+            :maxlength="LIMITES.descripcionMaxima"
+            placeholder="Ej. Cuarto para estudiantes de bachillerato"
+            class="min-h-20"
+            autocomplete="off"
+          />
         </div>
 
         <div class="grid gap-2">

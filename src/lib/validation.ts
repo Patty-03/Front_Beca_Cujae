@@ -7,6 +7,7 @@ export const LIMITES = {
   cantidadMedioMinima: 1,
   cantidadMedioMaxima: 999,
   observacionesMedio: 200,
+  descripcionMaxima: 200,
   email: 254,
   passwordMinima: 8,
   passwordMaxima: 128,
@@ -101,6 +102,22 @@ export function validarObservacionesMedio(value: string): string | undefined {
   }
 
   return observaciones
+}
+
+export function validarDescripcion(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+
+  const descripcion = normalizarTexto(value)
+
+  if (!descripcion) return undefined
+
+  if (descripcion.length > LIMITES.descripcionMaxima) {
+    throw new Error(
+      `La descripción no puede superar los ${LIMITES.descripcionMaxima} caracteres.`,
+    )
+  }
+
+  return descripcion
 }
 
 export function validarEmail(value: unknown): string {

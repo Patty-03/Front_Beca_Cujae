@@ -36,6 +36,7 @@ export interface CuartoResumen {
   ocupados: number
   ocupacionPct: number
   tieneAlojamientos: boolean
+  descripcion?: string
 }
 
 export interface DistribucionEstado {
@@ -87,6 +88,7 @@ export interface CrearCuartoInput {
   nombre: string
   capacidadMaxima: number
   estadoConstructivoId: number
+  descripcion?: string
 }
 
 export type ActualizarCuartoInput = CrearCuartoInput
