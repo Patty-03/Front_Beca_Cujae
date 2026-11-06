@@ -8,6 +8,9 @@ export interface EdificioResumen {
   id: number
   nombre: string
   estado: EstadoConstructivo
+  estadoSugerido: EstadoConstructivo
+  estadoManual: boolean
+  observacionEstado?: string
   escaleras: number
   cuartos: number
   capacidad: number
@@ -67,7 +70,9 @@ export interface EdificioDetalle extends EdificioResumen {
 
 export interface CrearEdificioInput {
   nombre: string
-  estadoConstructivoId: number
+  estadoConstructivoId?: number
+  estadoManual?: boolean
+  observacionEstado?: string
 }
 
 export type ActualizarEdificioInput = CrearEdificioInput

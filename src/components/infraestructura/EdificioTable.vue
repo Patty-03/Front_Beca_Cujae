@@ -50,9 +50,14 @@ const emit = defineEmits<{
                 {{ edificio.nombre }}
               </RouterLink>
             </TableCell>
-            <TableCell>
-              <EstadoConstructivoBadge :estado="edificio.estado" />
-            </TableCell>
+             <TableCell>
+               <div class="space-y-1">
+                 <EstadoConstructivoBadge :estado="edificio.estado" />
+                 <p v-if="edificio.observacionEstado" class="text-xs text-muted-foreground truncate max-w-xs" :title="edificio.observacionEstado">
+                   obs: {{ edificio.observacionEstado }}
+                 </p>
+               </div>
+             </TableCell>
             <TableCell class="text-center tabular-nums">{{ edificio.escaleras }}</TableCell>
             <TableCell class="text-center tabular-nums">{{ edificio.cuartos }}</TableCell>
             <TableCell>

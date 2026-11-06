@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { EdificioResumen, EstadoConstructivo } from '@/types/infraestructura'
 import { computed, ref, watch } from 'vue'
-import { LoaderCircleIcon } from '@lucide/vue'
+import { LoaderCircleIcon, AlertCircleIcon } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -35,6 +36,8 @@ const emit = defineEmits<{ guardado: [edificio: EdificioResumen] }>()
 
 const nombre = ref('')
 const estadoId = ref('')
+const observacion = ref('')
+const forzarManual = ref(false)
 const error = ref('')
 const guardando = ref(false)
 
@@ -43,7 +46,11 @@ const esEdicion = computed(() => Boolean(props.edificio))
 watch(open, (abierto) => {
   if (!abierto) return
   nombre.value = props.edificio?.nombre ?? ''
-  estadoId.value = String(props.edificio?.estado.id ?? props.estados[0]?.id ?? '')
+  estadoId.value = String(
+    props.edificio?.estado.id ?? props.edificio?.estadoSugerido.id ?? props.estados[0]?.id ?? '',
+  )
+  observacion.value = props.edificio?.observacionEstado ?? ''
+  forzarManual.value = props.edificio?.estadoManual ?? false
   error.value = ''
 })
 
@@ -59,9 +66,13 @@ async function guardar() {
   }
 
   const idEstado = Number(estadoId.value)
-
   if (!idEstado) {
     error.value = 'Seleccione un estado constructivo.'
+    return
+  }
+
+  if (forzarManual.value && !observacion.value.trim()) {
+    error.value = 'Debe agregar una observación o justificación para fijar el estado manualmente.'
     return
   }
 
@@ -71,10 +82,14 @@ async function guardar() {
       ? await actualizarEdificio(props.edificio.id, {
           nombre: nombreLimpio,
           estadoConstructivoId: idEstado,
+          estadoManual: forzarManual.value,
+          observacionEstado: observacion.value.trim() || undefined,
         })
       : await crearEdificio({
           nombre: nombreLimpio,
           estadoConstructivoId: idEstado,
+          estadoManual: forzarManual.value,
+          observacionEstado: observacion.value.trim() || undefined,
         })
 
     toast.success(esEdicion.value ? 'Edificio actualizado' : 'Edificio registrado', {
@@ -92,13 +107,13 @@ async function guardar() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>{{ esEdicion ? 'Editar edificio' : 'Nuevo edificio' }}</DialogTitle>
         <DialogDescription>
           {{
             esEdicion
-              ? 'Actualiza el nombre y el estado constructivo del edificio.'
+              ? 'Actualiza el nombre, el estado y las observaciones del edificio.'
               : 'Registra un edificio dentro del inventario de infraestructura.'
           }}
         </DialogDescription>
@@ -114,19 +129,30 @@ async function guardar() {
             maxlength="80"
             autocomplete="off"
             :aria-invalid="Boolean(error)"
-            :aria-describedby="error ? 'edificio-error' : undefined"
           />
         </div>
 
+        <div v-if="esEdicion && props.edificio" class="rounded-lg border p-3 bg-muted/30 text-sm space-y-1">
+          <p class="font-medium text-muted-foreground flex items-center gap-1.5">
+            <AlertCircleIcon class="size-4 text-primary" />
+            Estado sugerido por el sistema:
+            <span class="font-semibold text-foreground">{{ props.edificio.estadoSugerido.nombre }}</span>
+          </p>
+          <p class="text-xs text-muted-foreground">
+            Calculado automáticamente en función del estado de sus cuartos. Puedes sobrescribirlo abajo si existen factores externos (ej. problemas eléctricos/hidráulicos).
+          </p>
+        </div>
+
         <div class="grid gap-2">
-          <Label for="edificio-estado">Estado constructivo</Label>
+          <div class="flex items-center justify-between">
+            <Label for="edificio-estado">Estado constructivo definitivo</Label>
+            <label class="flex items-center gap-2 text-xs font-medium cursor-pointer">
+              <input v-model="forzarManual" type="checkbox" class="rounded border-input text-primary accent-primary" />
+              Fijar manualmente
+            </label>
+          </div>
           <Select v-model="estadoId">
-            <SelectTrigger
-              id="edificio-estado"
-              class="w-full"
-              :aria-invalid="Boolean(error)"
-              :aria-describedby="error ? 'edificio-error' : undefined"
-            >
+            <SelectTrigger id="edificio-estado" class="w-full">
               <SelectValue placeholder="Seleccione un estado" />
             </SelectTrigger>
             <SelectContent>
@@ -141,7 +167,17 @@ async function guardar() {
           </Select>
         </div>
 
-        <p v-if="error" id="edificio-error" role="alert" class="text-destructive text-sm">
+        <div class="grid gap-2">
+          <Label for="edificio-observacion">Observación / Justificación</Label>
+          <Textarea
+            id="edificio-observacion"
+            v-model="observacion"
+            placeholder="Ej. Falla en la instalación eléctrica central..."
+            rows="3"
+          />
+        </div>
+
+        <p v-if="error" role="alert" class="text-destructive text-sm">
           {{ error }}
         </p>
 
@@ -150,7 +186,7 @@ async function guardar() {
             <Button type="button" variant="outline">Cancelar</Button>
           </DialogClose>
           <Button type="submit" :disabled="guardando">
-            <LoaderCircleIcon v-if="guardando" class="animate-spin" />
+            <LoaderCircleIcon v-if="guardando" class="animate-spin mr-1" />
             {{ esEdicion ? 'Guardar cambios' : 'Registrar edificio' }}
           </Button>
         </DialogFooter>

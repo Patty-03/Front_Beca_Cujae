@@ -353,7 +353,13 @@ watch(id, cargar, { immediate: true })
           <div class="flex flex-wrap items-center gap-2">
             <h1 class="text-2xl font-semibold tracking-tight">{{ detalle.nombre }}</h1>
             <EstadoConstructivoBadge :estado="detalle.estado" />
+            <span v-if="detalle.estadoManual" class="text-xs font-medium text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              Estado fijado manualmente
+            </span>
           </div>
+          <p v-if="detalle.observacionEstado" class="text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg border">
+            <span class="font-medium text-foreground">Observación:</span> {{ detalle.observacionEstado }}
+          </p>
           <p class="text-muted-foreground text-sm">
             {{ detalle.escaleras }} escaleras · {{ formatNumber(detalle.cuartos) }} cuartos ·
             {{ formatNumber(detalle.capacidad) }} plazas

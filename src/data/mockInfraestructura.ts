@@ -4,6 +4,8 @@ export interface EdificioRecord {
   id: number
   nombre: string
   estadoConstructivoId: number
+  estadoManual?: boolean
+  observacionEstado?: string
 }
 
 export interface EscaleraRecord {

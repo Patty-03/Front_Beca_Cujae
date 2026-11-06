@@ -106,10 +106,10 @@ const resumenEdificio = (edificio: EdificioRecord): EdificioResumen => {
   const ocupados = propios.reduce((total, cuarto) => total + ocupadosDeCuarto(cuarto.id), 0)
   const cuartosResumen = propios.map(resumenCuarto)
   
-  let estadoCalculado = obtenerEstado(edificio.estadoConstructivoId)
+  let estadoSugerido = obtenerEstado(edificio.estadoConstructivoId)
   try {
     const umbralesStore = useUmbralesEdificiosStore()
-    estadoCalculado = calcularEstadoEdificio(
+    estadoSugerido = calcularEstadoEdificio(
       cuartosResumen,
       estadosConstructivos,
       umbralesStore.umbrales.pctBueno,
@@ -119,10 +119,17 @@ const resumenEdificio = (edificio: EdificioRecord): EdificioResumen => {
     // Si pinia no está activo en algún contexto aislado
   }
 
+  const estadoFinal = edificio.estadoManual && edificio.estadoConstructivoId
+    ? obtenerEstado(edificio.estadoConstructivoId)
+    : estadoSugerido
+
   return {
     id: edificio.id,
     nombre: edificio.nombre,
-    estado: estadoCalculado,
+    estado: estadoFinal,
+    estadoSugerido,
+    estadoManual: Boolean(edificio.estadoManual),
+    observacionEstado: edificio.observacionEstado,
     escaleras: escaleras.filter((escalera) => escalera.edificioId === edificio.id).length,
     cuartos: propios.length,
     capacidad,
@@ -225,7 +232,8 @@ export async function crearEdificio(input: CrearEdificioInput): Promise<Edificio
   await delay()
   const nombre = validarNombre(input.nombre, 'edificio', LIMITES.nombreEdificio)
   const nombreNormalizado = normalizarParaComparar(nombre)
-  obtenerEstado(input.estadoConstructivoId)
+  const estadoId = input.estadoConstructivoId ?? 1
+  obtenerEstado(estadoId)
 
   if (
     edificios.some(
@@ -238,7 +246,9 @@ export async function crearEdificio(input: CrearEdificioInput): Promise<Edificio
   const edificio: EdificioRecord = {
     id: siguienteId(edificios),
     nombre,
-    estadoConstructivoId: input.estadoConstructivoId,
+    estadoConstructivoId: estadoId,
+    estadoManual: Boolean(input.estadoManual),
+    observacionEstado: input.observacionEstado,
   }
   edificios.push(edificio)
   registrarEvento(`Alta del ${nombre}`)
@@ -253,7 +263,8 @@ export async function actualizarEdificio(
   const edificio = solicitarEdificio(id)
   const nombre = validarNombre(input.nombre, 'edificio', LIMITES.nombreEdificio)
   const nombreNormalizado = normalizarParaComparar(nombre)
-  obtenerEstado(input.estadoConstructivoId)
+  const estadoId = input.estadoConstructivoId ?? edificio.estadoConstructivoId
+  obtenerEstado(estadoId)
 
   if (
     edificios.some(
@@ -265,7 +276,9 @@ export async function actualizarEdificio(
   }
 
   edificio.nombre = nombre
-  edificio.estadoConstructivoId = input.estadoConstructivoId
+  edificio.estadoConstructivoId = estadoId
+  edificio.estadoManual = Boolean(input.estadoManual)
+  edificio.observacionEstado = input.observacionEstado
   registrarEvento(`Actualización del ${nombre}`)
   return resumenEdificio(edificio)
 }
