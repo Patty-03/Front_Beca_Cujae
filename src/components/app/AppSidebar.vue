@@ -4,7 +4,6 @@ import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   Building2Icon,
-  ChevronRightIcon,
   ChevronsUpDownIcon,
   ClipboardCheckIcon,
   ClipboardListIcon,
@@ -13,6 +12,15 @@ import {
   LogOutIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   SidebarMenuSub,
   SidebarMenuSubButton,
