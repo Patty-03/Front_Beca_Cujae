@@ -4,6 +4,9 @@ export const LIMITES = {
   nombreCuarto: 40,
   capacidadMinima: 1,
   capacidadMaxima: 20,
+  cantidadMedioMinima: 1,
+  cantidadMedioMaxima: 999,
+  observacionesMedio: 200,
   email: 254,
   passwordMinima: 8,
   passwordMaxima: 128,
@@ -65,6 +68,39 @@ export function validarCapacidad(value: unknown): number {
   }
 
   return capacidad
+}
+
+export function validarCantidadMedio(value: unknown): number {
+  const cantidad = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isInteger(cantidad)) {
+    throw new Error('La cantidad del medio debe ser un número entero.')
+  }
+
+  if (
+    cantidad < LIMITES.cantidadMedioMinima ||
+    cantidad > LIMITES.cantidadMedioMaxima
+  ) {
+    throw new Error(
+      `La cantidad del medio debe estar entre ${LIMITES.cantidadMedioMinima} y ${LIMITES.cantidadMedioMaxima}.`,
+    )
+  }
+
+  return cantidad
+}
+
+export function validarObservacionesMedio(value: string): string | undefined {
+  const observaciones = normalizarTexto(value)
+
+  if (!observaciones) return undefined
+
+  if (observaciones.length > LIMITES.observacionesMedio) {
+    throw new Error(
+      `Las observaciones no pueden superar los ${LIMITES.observacionesMedio} caracteres.`,
+    )
+  }
+
+  return observaciones
 }
 
 export function validarEmail(value: unknown): string {
