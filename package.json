@@ -11,6 +11,9 @@
     "type-check": "vue-tsc --build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
@@ -33,6 +36,7 @@
     "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@tsconfig/node24": "^24.0.5",
     "@types/node": "^24.13.4",
     "@vitejs/plugin-vue": "^6.0.8",

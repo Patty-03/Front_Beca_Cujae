@@ -4,6 +4,8 @@ import { esSesion, sesionExpirada } from './contracts'
 
 const TOKEN_KEY = 'beca-cujae-access_token'
 
+let sesionCache: Session | null = null
+
 const PERMISO_BACK_TO_FRONT: Record<string, Permission[]> = {
   ESTUD_GESTIONAR: ['estudiantes:write'],
   ESTUD_CONSULTAR: ['estudiantes:read', 'infraestructura:read'],
@@ -54,6 +56,8 @@ interface UsuarioPublico {
 }
 
 async function leerSesionDesdeToken(): Promise<Session> {
+  if (sesionCache) return sesionCache
+
   const token = localStorage.getItem(TOKEN_KEY)
   if (!token) throw new Error('No hay token de acceso.')
 
@@ -61,6 +65,7 @@ async function leerSesionDesdeToken(): Promise<Session> {
   if (response.status === 401) {
     localStorage.removeItem(TOKEN_KEY)
     setAccessToken(null)
+    sesionCache = null
     throw new Error('La sesión ha expirado o no es válida.')
   }
   if (!response.ok) {
@@ -97,6 +102,7 @@ async function leerSesionDesdeToken(): Promise<Session> {
     throw new Error('La sesión recibida no es válida o ha expirado.')
   }
 
+  sesionCache = session
   return session
 }
 
@@ -148,6 +154,7 @@ export class HttpAuthGateway implements AuthGateway {
   async logout(): Promise<void> {
     localStorage.removeItem(TOKEN_KEY)
     setAccessToken(null)
+    sesionCache = null
     try {
       const response = await apiFetch('/api/v1/auth/logout', { method: 'POST' })
       if (!response.ok && response.status !== 404 && response.status !== 401) {

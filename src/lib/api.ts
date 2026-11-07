@@ -1,5 +1,7 @@
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
+const FETCH_TIMEOUT_MS = 10000
+
 let accessToken: string | null = null
 
 export function setAccessToken(token: string | null): void {
@@ -8,6 +10,10 @@ export function setAccessToken(token: string | null): void {
 
 export function getAccessToken(): string | null {
   return accessToken
+}
+
+export function getFetchTimeoutMs(): number {
+  return FETCH_TIMEOUT_MS
 }
 
 export function apiUrl(path: string): string {
@@ -53,14 +59,38 @@ function crearHeaders(init?: RequestInit): Headers {
   return headers
 }
 
+async function fetchConTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  ms: number = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controlador = new AbortController()
+  const temporizador = setTimeout(() => controlador.abort(), ms)
+
+  try {
+    const respuesta = await fetch(input, {
+      ...init,
+      signal: controlador.signal,
+    })
+    return respuesta
+  } finally {
+    clearTimeout(temporizador)
+  }
+}
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   try {
-    return await fetch(apiUrl(path), {
+    return await fetchConTimeout(apiUrl(path), {
       ...init,
       credentials: 'include',
       headers: crearHeaders(init),
     })
-  } catch {
+  } catch (caught) {
+    if (caught instanceof DOMException && caught.name === 'AbortError') {
+      throw new Error(
+        `El servidor tardó demasiado en responder (más de ${FETCH_TIMEOUT_MS / 1000}s). Verifique que el backend esté en ejecución en ${API_BASE}.`,
+      )
+    }
     throw new Error('No se pudo contactar con el servidor.')
   }
 }
