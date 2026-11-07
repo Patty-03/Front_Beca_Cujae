@@ -19,7 +19,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
-      meta: { title: 'Iniciar sesión' },
+      meta: { title: 'Iniciar sesiÃ³n' },
     },
     {
       path: '/',
@@ -55,7 +55,7 @@ const router = createRouter({
             permissions: ['deberes:read'],
             title: 'Deberes',
             description:
-              'Aquí podrás gestionar las tareas y responsabilidades de los estudiantes de la residencia.',
+              'AquÃ­ podrÃ¡s gestionar las tareas y responsabilidades de los estudiantes de la residencia.',
           },
         },
         {
@@ -67,7 +67,7 @@ const router = createRouter({
             permissions: ['estudiantes:read'],
             title: 'Estudiantes',
             description:
-              'Aquí podrás consultar la información y el estado de los estudiantes residentes.',
+              'AquÃ­ podrÃ¡s consultar la informaciÃ³n y el estado de los estudiantes residentes.',
           },
         },
         {
@@ -79,7 +79,7 @@ const router = createRouter({
             permissions: ['evaluaciones:read'],
             title: 'Evaluaciones',
             description:
-              'Aquí podrás revisar y registrar las evaluaciones realizadas a los estudiantes.',
+              'AquÃ­ podrÃ¡s revisar y registrar las evaluaciones realizadas a los estudiantes.',
           },
         },
         {
@@ -112,13 +112,23 @@ const router = createRouter({
             title: 'Detalle del edificio',
           },
         },
+        {
+          path: 'superadmin',
+          name: 'superadmin',
+          component: () => import('@/views/SuperAdminView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['usuarios:manage'],
+            title: 'Super Admin',
+          },
+        },
       ],
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
-      meta: { title: 'Página no encontrada' },
+      meta: { title: 'PÃ¡gina no encontrada' },
     },
   ],
 })
@@ -147,7 +157,7 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} · Residencia CUJAE` : 'Residencia CUJAE'
+  document.title = to.meta.title ? `${to.meta.title} Â· Residencia CUJAE` : 'Residencia CUJAE'
 })
 
 export default router

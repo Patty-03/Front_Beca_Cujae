@@ -7,6 +7,8 @@ export type Permission =
   | 'estudiantes:read'
   | 'estudiantes:write'
   | 'evaluaciones:read'
+  | 'usuarios:manage'
+  | 'roles:manage'
 
 export interface SessionUser {
   id: string
@@ -32,3 +34,20 @@ export interface AuthGateway {
   logout(): Promise<void>
   getSession(): Promise<Session | null>
 }
+
+export interface UsuarioAdmin {
+  id: string
+  nombre: string
+  email: string
+  roles: Role[]
+  activo: boolean
+}
+
+export interface CrearUsuarioInput {
+  nombre: string
+  email: string
+  roles: Role[]
+  activo: boolean
+}
+
+export type ActualizarUsuarioInput = UsuarioAdmin

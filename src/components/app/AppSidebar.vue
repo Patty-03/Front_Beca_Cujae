@@ -10,6 +10,7 @@ import {
   GraduationCapIcon,
   HouseIcon,
   LogOutIcon,
+  UsersIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -66,6 +67,12 @@ const navigation: NavGroup[] = [
   {
     label: 'General',
     items: [{ label: 'Inicio', to: '/', icon: HouseIcon, exact: true }],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      { label: 'Super Admin', to: '/superadmin', icon: UsersIcon, permission: 'usuarios:manage' },
+    ],
   },
   {
     label: 'Módulos',
