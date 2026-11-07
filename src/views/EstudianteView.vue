@@ -270,31 +270,33 @@ onMounted(async () => {
 
     <section class="grid gap-6">
       <!-- Banner de bienvenida -->
-      <article
-        class="rounded-2xl bg-gradient-to-r from-primary to-primary/90 p-6 text-white"
-      >
+      <article class="rounded-2xl bg-blue-50 border border-blue-100 p-6">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-primary/20 text-xs font-semibold tracking-wider uppercase"
+            <span class="text-blue-600 text-xs font-semibold tracking-wider uppercase"
               >CUJA · Residencia</span
             >
-            <h2 class="text-2xl font-bold mt-1">Hola, {{ detalle?.nombre ?? 'Estudiante' }}</h2>
-            <p class="text-primary/80 text-sm mt-2">
+            <h2 class="text-2xl font-bold text-blue-900 mt-1">
+              Hola, {{ detalle?.nombre ?? 'Estudiante' }}
+            </h2>
+            <p class="text-blue-600 text-sm mt-2">
               Bienvenido al panel general de la residencia estudiantil. Selecciona un módulo para
               comenzar a trabajar.
             </p>
           </div>
           <div class="hidden lg:flex items-end gap-4">
             <div class="text-right">
-              <p class="text-sm text-primary/80 font-medium">{{ detalle?.carnet ?? '-' }}</p>
-              <p class="text-xs text-primary/60 uppercase">
-                {{ detalle?.carrera ?? '-' }}
+              <p class="text-sm text-blue-700 font-medium">
+                {{ detalle?.carnet ?? 'Sin datos' }}
+              </p>
+              <p class="text-xs text-blue-600 uppercase">
+                {{ detalle?.carrera ?? 'Sin datos' }}
               </p>
             </div>
-            <div class="flex items-center gap-2 p-2 rounded-lg bg-white/10 backdrop-blur-sm">
-              <UserIcon class="size-4 text-white" />
-              <span class="text-xs text-white font-medium">
-                {{ detalle?.anioAcademico ?? '-' }}.º año
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-blue-100">
+              <UserIcon class="size-4 text-blue-600" />
+              <span class="text-xs text-blue-700 font-medium">
+                {{ detalle?.anioAcademico ?? '--' }}.º año
               </span>
             </div>
           </div>
