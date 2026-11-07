@@ -35,6 +35,8 @@ const creando = ref(false)
 const eliminando = ref(false)
 const editDialogOpen = ref(false)
 const editando = ref<UsuarioAdmin | null>(null)
+const eliminarDialogOpen = ref(false)
+const usuarioParaEliminar = ref<UsuarioAdmin | null>(null)
 const rolesGestionables = ['estudiante', 'operador', 'administrador'] as Role[]
 
 async function cargar() {
@@ -86,17 +88,29 @@ async function crear() {
   }
 }
 
-async function confirmarEliminar(usuario: UsuarioAdmin) {
+function confirmarEliminar(usuario: UsuarioAdmin) {
+  usuarioParaEliminar.value = usuario
+  eliminarDialogOpen.value = true
+}
+
+async function confirmarEliminacion() {
+  if (!usuarioParaEliminar.value) return
   eliminando.value = true
   try {
-    await eliminarUsuario(usuario.id)
-    toast.success('Usuario eliminado', { description: usuario.email })
+    await eliminarUsuario(usuarioParaEliminar.value.id)
+    toast.success('Usuario eliminado', { description: usuarioParaEliminar.value.email })
+    cancelarEliminacion()
     await cargar()
   } catch (e) {
     toast.error('No se pudo eliminar el usuario', { description: e instanceof Error ? e.message : undefined })
   } finally {
     eliminando.value = false
   }
+}
+
+function cancelarEliminacion() {
+  usuarioParaEliminar.value = null
+  eliminarDialogOpen.value = false
 }
 
 async function cambiarRol(usuario: UsuarioAdmin, rol: Role) {
@@ -278,7 +292,7 @@ async function guardarPermisosRol(rol: Role) {
       </CardContent>
     </Card>
 
-    <Dialog v-model:open="editDialogOpen">
+    <Dialog v-model:open="editDialogOpen" @update:open="editDialogOpen = $event">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar usuario</DialogTitle>
@@ -319,6 +333,25 @@ async function guardarPermisosRol(rol: Role) {
           </Button>
           <Button :disabled="!editando" @click="guardarUsuario">
             Guardar cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="eliminarDialogOpen" @update:open="eliminarDialogOpen = $event">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Eliminar usuario</DialogTitle>
+          <DialogDescription>
+            ¿Estás seguro de que deseas eliminar a <strong>{{ usuarioParaEliminar?.email }}</strong>? Esta acción no se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="cancelarEliminacion">
+            Cancelar
+          </Button>
+          <Button :disabled="eliminando" @click="confirmarEliminacion">
+            Eliminar
           </Button>
         </DialogFooter>
       </DialogContent>
