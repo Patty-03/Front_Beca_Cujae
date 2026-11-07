@@ -9,12 +9,10 @@ import type {
 import { computed, onMounted, ref } from 'vue'
 import {
   BellIcon,
-  ClockIcon,
+  CalendarIcon,
   DownloadIcon,
   FileTextIcon,
   HomeIcon,
-  MailIcon,
-  ShieldAlertIcon,
   UserIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -26,12 +24,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/format'
-import { ETIQUETAS_SEXO, ETIQUETAS_ESTADO_BECA } from '@/lib/estudiantes'
+import { ETIQUETAS_SEXO } from '@/lib/estudiantes'
 import { obtenerEstudiante } from '@/services/estudiantes'
 import {
   obtenerAvisos,
@@ -44,10 +42,13 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import FirmarDocumentoDialog from '@/components/estudiante-view/FirmarDocumentoDialog.vue'
 import { ETIQUETAS_TIPO_DOCUMENTO } from '@/types/estudiante-view'
-import KpiCard from '@/components/infraestructura/KpiCard.vue'
 
 const auth = useAuthStore()
-const estudianteId = computed(() => auth.user?.id ? Number(auth.user.id) : null)
+const estudianteId = computed(() => {
+  if (!auth.user?.id) return null
+  if (auth.isDemo) return 1
+  return Number(auth.user.id)
+})
 
 const detalle = ref<Estudiante | null>(null)
 const cargando = ref(false)
@@ -77,12 +78,6 @@ const debeFirmar = computed(() =>
 const totalDeberesPendientes = computed(() =>
   detalle.value?.deberes.filter((d) => d.estado === 'pendiente').length ?? 0,
 )
-
-const totalDeberesIncumplidos = computed(() =>
-  detalle.value?.deberes.filter((d) => d.estado === 'incumplido').length ?? 0,
-)
-
-const tieneCuarto = computed(() => !!detalle.value?.asignacion)
 
 async function cargarEstudiante() {
   if (!estudianteId.value) return
@@ -154,19 +149,6 @@ function varianteEstadoDeber(estado: string) {
   return 'outline'
 }
 
-function variantePrioridad(prioridad: string) {
-  if (prioridad === 'alta') return 'destructive'
-  if (prioridad === 'media') return 'secondary'
-  return 'outline'
-}
-
-function varianteTipoNotificacion(tipo: string) {
-  if (tipo === 'error') return 'destructive'
-  if (tipo === 'advertencia') return 'outline'
-  if (tipo === 'exito') return 'secondary'
-  return 'outline'
-}
-
 async function firmarDoc(documento: Documento) {
   documentoFirmando.value = documento
   firmarAbierto.value = true
@@ -220,7 +202,8 @@ onMounted(async () => {
       <div class="space-y-1">
         <h1 class="text-2xl font-bold tracking-tight">Mi Perfil</h1>
         <p class="text-muted-foreground text-sm">
-          Bienvenido a su panel personal de la residencia CUJAE.
+          Bienvenido a su panel personal de la residencia CUJA{' '}
+          <span class="font-semibold text-primary">{{ detalle?.nombre ?? '' }}</span>
         </p>
       </div>
 
@@ -285,140 +268,264 @@ onMounted(async () => {
       <AlertDescription>{{ error }}</AlertDescription>
     </Alert>
 
-    <section v-if="detalle" class="grid gap-6">
-      <!-- KPI Cards -->
-      <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard
-          label="Estado de beca"
-          :value="ETIQUETAS_ESTADO_BECA[detalle.estadoBeca] ?? detalle.estadoBeca"
-          :detail="detalle.estadoBeca"
-          :icon="ShieldAlertIcon"
-          :tono="detalle.estadoBeca === 'baja' ? 'amber' : detalle.estadoBeca === 'condicional' ? 'amber' : 'emerald'"
-        />
-        <KpiCard
-          label="Cuarto"
-          :value="detalle.asignacion?.cuartoNombre ?? 'Sin cuarto'"
-          :detail="
-            detalle.asignacion?.edificioNombre ??
-            'Sin asignación activa'
-          "
-          :icon="HomeIcon"
-          :tono="tieneCuarto ? 'emerald' : 'amber'"
-        />
-        <KpiCard
-          label="Deberes pendientes"
-          :value="totalDeberesPendientes"
-          :detail="`${totalDeberesIncumplidos} incumplidos`"
-          :icon="ClockIcon"
-          tono="sky"
-        />
-        <KpiCard
-          label="Documentos por firmar"
-          :value="debeFirmar"
-          :detail="`${documentos.length - debeFirmar} firmados`"
-          :icon="FileTextIcon"
-          :tono="debeFirmar > 0 ? 'amber' : 'emerald'"
-        />
-        <KpiCard
-          label="Notificaciones no leídas"
-          :value="notificacionesNoLeidas"
-          :detail="`${notificaciones.length} en total`"
-          :icon="BellIcon"
-          :tono="notificacionesNoLeidas > 0 ? 'sky' : 'emerald'"
-        />
-        <KpiCard
-          label="Año académico"
-          :value="`${detalle.anioAcademico}.º`"
-          :detail="`${detalle.carrera} · ${detalle.especialidad}`"
-          :icon="MailIcon"
-          tono="primary"
-        />
+    <section class="grid gap-6">
+      <!-- Banner de bienvenida -->
+      <article
+        class="rounded-2xl bg-gradient-to-r from-primary to-primary/90 p-6 text-white"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-primary/20 text-xs font-semibold tracking-wider uppercase"
+              >CUJA · Residencia</span
+            >
+            <h2 class="text-2xl font-bold mt-1">Hola, {{ detalle?.nombre ?? 'Estudiante' }}</h2>
+            <p class="text-primary/80 text-sm mt-2">
+              Bienvenido al panel general de la residencia estudiantil. Selecciona un módulo para
+              comenzar a trabajar.
+            </p>
+          </div>
+          <div class="hidden lg:flex items-end gap-4">
+            <div class="text-right">
+              <p class="text-sm text-primary/80 font-medium">{{ detalle?.carnet ?? '-' }}</p>
+              <p class="text-xs text-primary/60 uppercase">
+                {{ detalle?.carrera ?? '-' }}
+              </p>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-white/10 backdrop-blur-sm">
+              <UserIcon class="size-4 text-white" />
+              <span class="text-xs text-white font-medium">
+                {{ detalle?.anioAcademico ?? '-' }}.º año
+              </span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Accesos rápidos -->
+      <div>
+        <h3 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+          Accesos rápidos
+        </h3>
+        <div class="grid gap-4 lg:grid-cols-4">
+          <!-- Cuarto -->
+          <article class="rounded-xl border bg-card p-5 hover:shadow-sm transition-shadow">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
+                >
+                  <HomeIcon class="size-5" />
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm">Cuarto</h4>
+                  <p class="text-muted-foreground text-xs">
+                    Su asignación de alojamiento
+                  </p>
+                </div>
+              </div>
+              <Badge
+                v-if="detalle?.asignacion"
+                variant="secondary"
+                class="text-xs"
+              >
+                Asignado
+              </Badge>
+              <Badge v-else variant="outline" class="text-xs">
+                Sin cuarto
+              </Badge>
+            </div>
+            <div class="mt-4">
+              <Button variant="outline" size="sm" class="w-full" @click="abrirNotificacion">
+                Ver módulo
+              </Button>
+            </div>
+          </article>
+
+          <!-- Avisos -->
+          <article class="rounded-xl border bg-card p-5 hover:shadow-sm transition-shadow">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-amber/10 text-amber-700 flex size-10 shrink-0 items-center justify-center rounded-lg"
+                >
+                  <BellIcon class="size-5" />
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm">Avisos</h4>
+                  <p class="text-muted-foreground text-xs">
+                    Comunicados de la residencia
+                  </p>
+                </div>
+              </div>
+              <Badge
+                v-if="avisos.length > 0"
+                variant="outline"
+                class="text-xs"
+              >
+                {{ avisos.length }}
+              </Badge>
+            </div>
+            <div class="mt-4">
+              <Button variant="outline" size="sm" class="w-full">
+                Ver módulo
+              </Button>
+            </div>
+          </article>
+
+          <!-- Evaluación -->
+          <article class="rounded-xl border bg-card p-5 hover:shadow-sm transition-shadow">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-emerald/10 text-emerald-700 flex size-10 shrink-0 items-center justify-center rounded-lg"
+                >
+                  <CalendarIcon class="size-5" />
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm">Evaluación</h4>
+                  <p class="text-muted-foreground text-xs">
+                    Estado de su beca y deberes
+                  </p>
+                </div>
+              </div>
+              <Badge :variant="varianteEstadoBeca(detalle?.estadoBeca ?? 'activo')" class="text-xs">
+                {{ detalle?.estadoBeca ?? 'Sin datos' }}
+              </Badge>
+            </div>
+            <div class="mt-4">
+              <Button variant="outline" size="sm" class="w-full">
+                Ver módulo
+              </Button>
+            </div>
+          </article>
+
+          <!-- Documentos -->
+          <article class="rounded-xl border bg-card p-5 hover:shadow-sm transition-shadow">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-blue/10 text-blue-700 flex size-10 shrink-0 items-center justify-center rounded-lg"
+                >
+                  <FileTextIcon class="size-5" />
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm">Documentos</h4>
+                  <p class="text-muted-foreground text-xs">
+                    Firme y descargue sus documentos
+                  </p>
+                </div>
+              </div>
+              <Badge v-if="debeFirmar > 0" variant="outline" class="text-xs">
+                {{ debeFirmar }} pendiente(s)
+              </Badge>
+            </div>
+            <div class="mt-4">
+              <Button variant="outline" size="sm" class="w-full">
+                Ver módulo
+              </Button>
+            </div>
+          </article>
+        </div>
       </div>
 
+      <!-- Sección inferior: 3 columnas -->
       <div class="grid gap-6 lg:grid-cols-3">
         <!-- Mis datos -->
-        <article class="card rounded-xl border p-5 lg:col-span-2">
+        <article v-if="detalle" class="rounded-xl border bg-card p-5 lg:col-span-2">
           <CardHeader>
             <CardTitle>Mis datos</CardTitle>
             <CardDescription>
               Información personal y académica del becado.
             </CardDescription>
           </CardHeader>
-          <div class="space-y-4 pt-2">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div class="flex items-start gap-3">
-                <div class="bg-primary/10 text-primary flex size-12 shrink-0 items-center justify-center rounded-full">
-                  <UserIcon class="size-6" />
+          <CardContent>
+            <div class="space-y-4 pt-2">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex items-start gap-3">
+                  <div class="bg-primary/10 text-primary flex size-12 shrink-0 items-center justify-center rounded-full">
+                    <UserIcon class="size-6" />
+                  </div>
+                  <div>
+                    <h2 class="text-lg font-semibold">{{ detalle.nombre }}</h2>
+                    <p class="text-muted-foreground text-sm">
+                      {{ detalle.carnet }} ·
+                      {{ ETIQUETAS_SEXO[detalle.sexo] }} ·
+                      {{ detalle.anioAcademico }}.º año
+                    </p>
+                    <p class="text-muted-foreground text-sm">
+                      {{ detalle.carrera }} · {{ detalle.especialidad }}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 class="text-lg font-semibold">{{ detalle.nombre }}</h2>
-                  <p class="text-muted-foreground text-sm">
-                    {{ detalle.carnet }} ·
-                    {{ ETIQUETAS_SEXO[detalle.sexo] }} ·
-                    {{ detalle.anioAcademico }}.º año
+                <Badge :variant="varianteEstadoBeca(detalle.estadoBeca)">
+                  {{ detalle.estadoBeca }}
+                </Badge>
+              </div>
+              <Separator />
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div class="space-y-2">
+                  <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
+                    Facultad
                   </p>
-                  <p class="text-muted-foreground text-sm">
-                    {{ detalle.carrera }} · {{ detalle.especialidad }}
+                  <p>{{ detalle.facultad }}</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
+                    Grupo
                   </p>
+                  <p>{{ detalle.grupo || 'No registrado' }}</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
+                    Tipo de ingreso
+                  </p>
+                  <p>{{ detalle.tipoIngreso }}</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
+                    Teléfono
+                  </p>
+                  <p>{{ detalle.telefono }}</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
+                    Provincia / municipio
+                  </p>
+                  <p>{{ detalle.provincia }} · {{ detalle.municipio }}</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
+                    Fecha de ingreso
+                  </p>
+                  <p>{{ formatDate(detalle.fechaIngreso) }}</p>
                 </div>
               </div>
-              <Badge :variant="varianteEstadoBeca(detalle.estadoBeca)">
-                {{ detalle.estadoBeca }}
-              </Badge>
             </div>
-
-            <Separator />
-
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div class="space-y-2">
-                <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
-                  Facultad
-                </p>
-                <p>{{ detalle.facultad }}</p>
-              </div>
-              <div class="space-y-2">
-                <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
-                  Grupo
-                </p>
-                <p>{{ detalle.grupo || 'No registrado' }}</p>
-              </div>
-              <div class="space-y-2">
-                <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
-                  Tipo de ingreso
-                </p>
-                <p>{{ detalle.tipoIngreso }}</p>
-              </div>
-              <div class="space-y-2">
-                <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
-                  Teléfono
-                </p>
-                <p>{{ detalle.telefono }}</p>
-              </div>
-              <div class="space-y-2">
-                <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
-                  Provincia / municipio
-                </p>
-                <p>{{ detalle.provincia }} · {{ detalle.municipio }}</p>
-              </div>
-              <div class="space-y-2">
-                <p class="text-muted-foreground text-xs uppercase tracking-wider text-[10px]">
-                  Fecha de ingreso
-                </p>
-                <p>{{ formatDate(detalle.fechaIngreso) }}</p>
-              </div>
-            </div>
-          </div>
+          </CardContent>
         </article>
-
-        <!-- Mi cuarto -->
-        <article class="card rounded-xl border p-5">
+        <article v-else class="rounded-xl border bg-card p-5 lg:col-span-2">
           <CardHeader>
-            <CardTitle>Mi cuarto</CardTitle>
+            <CardTitle>Mis datos</CardTitle>
             <CardDescription>
-              Detalle de su asignación de alojamiento.
+              Información personal y académica del becado.
             </CardDescription>
           </CardHeader>
-          <div class="pt-2">
+          <CardContent class="pt-4">
+            <div class="text-center text-muted-foreground text-sm py-8">
+              Actualmente no hay datos personales disponibles.
+            </div>
+          </CardContent>
+        </article>
+
+        <!-- Mi cuarto detalle -->
+        <article v-if="detalle" class="rounded-xl border bg-card p-5">
+          <CardHeader>
+            <CardTitle>Mi cuarto (detalle)</CardTitle>
+            <CardDescription>
+              Detalle completo de su asignación de alojamiento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="pt-2">
             <div
               v-if="detalle.asignacion"
               class="bg-muted/40 grid gap-2 rounded-lg border p-4 text-sm"
@@ -468,11 +575,24 @@ onMounted(async () => {
                 administración de la residencia.
               </AlertDescription>
             </Alert>
-          </div>
+          </CardContent>
+        </article>
+        <article v-else class="rounded-xl border bg-card p-5">
+          <CardHeader>
+            <CardTitle>Mi cuarto (detalle)</CardTitle>
+            <CardDescription>
+              Detalle completo de su asignación de alojamiento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="pt-4">
+            <div class="text-center text-muted-foreground text-sm py-8">
+              Actualmente no hay datos de cuarto disponibles.
+            </div>
+          </CardContent>
         </article>
 
         <!-- Mis deberes -->
-        <article class="card rounded-xl border p-5 lg:col-span-2">
+        <article v-if="detalle" class="rounded-xl border bg-card p-5 lg:col-span-2">
           <CardHeader class="flex items-center justify-between">
             <div>
               <CardTitle>Mis deberes</CardTitle>
@@ -484,7 +604,7 @@ onMounted(async () => {
               {{ totalDeberesPendientes }} pendiente(s)
             </Badge>
           </CardHeader>
-          <div class="pt-2">
+          <CardContent class="pt-2">
             <div v-if="detalle.deberes.length === 0" class="text-muted-foreground text-sm">
               No tiene deberes registrados.
             </div>
@@ -508,126 +628,24 @@ onMounted(async () => {
                 </Badge>
               </div>
             </div>
-          </div>
+          </CardContent>
         </article>
-      </div>
-
-      <div class="grid gap-6 lg:grid-cols-3">
-        <!-- Avisos de la residencia -->
-        <article class="card rounded-xl border p-5 lg:col-span-2">
-          <CardHeader class="flex items-center justify-between">
-            <div>
-              <CardTitle>Avisos de la residencia</CardTitle>
-              <CardDescription>
-                Comunicados importantes para los becados.
-              </CardDescription>
-            </div>
-            <Badge
-              v-if="avisos.length"
-              :variant="variantePrioridad(avisos[0]!.prioridad)"
-            >
-              {{ avisos.length }} nuevo(s)
-            </Badge>
+        <article v-else class="rounded-xl border bg-card p-5 lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Mis deberes</CardTitle>
+            <CardDescription>
+              Responsabilidades asignadas y su estado de cumplimiento.
+            </CardDescription>
           </CardHeader>
-          <div class="pt-2">
-            <div v-if="avisosCargando" class="grid gap-3">
-              <Skeleton v-for="i in 3" :key="i" class="h-16 w-full" />
+          <CardContent class="pt-4">
+            <div class="text-center text-muted-foreground text-sm py-8">
+              Actualmente no hay datos de deberes disponibles.
             </div>
-            <div v-else-if="avisos.length === 0" class="text-muted-foreground text-sm py-4">
-              No hay avisos disponibles.
-            </div>
-            <div v-else class="grid gap-3">
-              <div
-                v-for="aviso in avisos"
-                :key="aviso.id"
-                class="flex flex-col gap-2 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p class="font-medium">{{ aviso.titulo }}</p>
-                  <p class="text-muted-foreground text-sm line-clamp-2">
-                    {{ aviso.contenido }}
-                  </p>
-                  <p class="text-muted-foreground text-xs">
-                    {{ formatDate(aviso.fecha) }}
-                  </p>
-                </div>
-                <Badge :variant="variantePrioridad(aviso.prioridad)">
-                  {{ aviso.prioridad }}
-                </Badge>
-              </div>
-            </div>
-          </div>
+          </CardContent>
         </article>
 
-        <!-- Notificaciones -->
-        <article class="card rounded-xl border p-5">
-          <CardHeader class="flex items-center justify-between">
-            <div>
-              <CardTitle>Notificaciones</CardTitle>
-              <CardDescription>
-                Alertas personales sobre su estado en la residencia.
-              </CardDescription>
-            </div>
-            <Badge v-if="notificacionesNoLeidas > 0" variant="destructive">
-              {{ notificacionesNoLeidas }} sin leer
-            </Badge>
-          </CardHeader>
-          <div class="pt-2">
-            <div v-if="notificacionesCargando" class="grid gap-3">
-              <Skeleton v-for="i in 3" :key="i" class="h-16 w-full" />
-            </div>
-            <div v-else-if="notificaciones.length === 0" class="text-muted-foreground text-sm py-4">
-              No tiene notificaciones.
-            </div>
-            <div v-else class="grid gap-3">
-              <div
-                v-for="notificacion in notificaciones"
-                :key="notificacion.id"
-                class="flex flex-col gap-2 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between cursor-pointer"
-                :class="
-                  notificacion.leida
-                    ? 'bg-muted/30 hover:bg-muted/40 transition-colors'
-                    : 'bg-primary/5 border-primary/50 hover:bg-primary/10 transition-colors'
-                "
-                @click="abrirNotificacion(notificacion)"
-              >
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-start justify-between gap-2">
-                    <p class="font-medium">{{ notificacion.titulo }}</p>
-                    <Badge
-                      v-if="!notificacion.leida"
-                      variant="outline"
-                      class="text-[10px] leading-none px-1.5 py-0.5"
-                    >
-                      Nuevo
-                    </Badge>
-                  </div>
-                  <p class="text-muted-foreground text-sm line-clamp-1">
-                    {{ notificacion.mensaje }}
-                  </p>
-                  <p class="text-muted-foreground text-xs">
-                    {{ formatDate(notificacion.fecha) }}
-                    <span v-if="!notificacion.leida" class="ml-2"> · Sin leer</span>
-                  </p>
-                </div>
-                <Badge :variant="varianteTipoNotificacion(notificacion.tipo)">
-                  {{
-                    notificacion.tipo === 'info'
-                      ? 'Información'
-                      : notificacion.tipo === 'exito'
-                        ? 'Éxito'
-                        : notificacion.tipo === 'advertencia'
-                          ? 'Advertencia'
-                          : 'Error'
-                  }}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Mis documentos -->
-        <article class="card rounded-xl border p-5 lg:col-span-2">
+        <!-- Mis documentos completos -->
+        <article v-if="documentos.length > 0" class="rounded-xl border bg-card p-5 lg:col-span-2">
           <CardHeader>
             <CardTitle>Mis documentos</CardTitle>
             <CardDescription>
@@ -635,14 +653,8 @@ onMounted(async () => {
               caracterización.
             </CardDescription>
           </CardHeader>
-          <div class="pt-2">
-            <div v-if="documentosCargando" class="grid gap-3">
-              <Skeleton v-for="i in 3" :key="i" class="h-16 w-full" />
-            </div>
-            <div v-else-if="documentos.length === 0" class="text-muted-foreground text-sm py-4">
-              No hay documentos disponibles.
-            </div>
-            <div v-else class="grid gap-3">
+          <CardContent class="pt-2">
+            <div class="grid gap-3">
               <div
                 v-for="documento in documentos"
                 :key="documento.id"
@@ -684,18 +696,32 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </article>
+        <article v-else class="rounded-xl border bg-card p-5 lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Mis documentos</CardTitle>
+            <CardDescription>
+              Convenio de alojamiento, boleta de la facultad y tarjeta de
+              caracterización.
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="pt-4">
+            <div class="text-center text-muted-foreground text-sm py-8">
+              No hay documentos disponibles.
+            </div>
+          </CardContent>
         </article>
 
         <!-- Preguntas frecuentes -->
-        <article class="card rounded-xl border p-5">
+        <article class="rounded-xl border bg-card p-5">
           <CardHeader>
             <CardTitle>Preguntas frecuentes</CardTitle>
             <CardDescription>
               Respuestas a las dudas más comunes de los becados.
             </CardDescription>
           </CardHeader>
-          <div class="pt-2 space-y-3">
+          <CardContent class="pt-2 space-y-3">
             <div v-if="preguntasCargando" class="grid gap-3">
               <Skeleton v-for="i in 3" :key="i" class="h-16 w-full" />
             </div>
@@ -717,15 +743,10 @@ onMounted(async () => {
                 <p class="text-sm text-muted-foreground">{{ pregunta.respuesta }}</p>
               </div>
             </div>
-          </div>
+          </CardContent>
         </article>
       </div>
     </section>
-
-    <div v-else class="flex flex-col items-center justify-center py-24 text-center">
-      <Skeleton class="h-8 w-32" />
-      <p class="mt-4 text-muted-foreground">Cargando su perfil...</p>
-    </div>
 
     <FirmarDocumentoDialog
       v-model:open="firmarAbierto"
