@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Role, UsuarioAdmin } from '@/types/auth'
 import { computed, onMounted, ref } from 'vue'
-import { PencilIcon, Trash2Icon, XIcon } from '@lucide/vue'
+import { PencilIcon, Trash2Icon } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -299,15 +299,6 @@ async function guardarPermisosRol(rol: Role) {
           <DialogDescription>
             Modifica los datos del usuario y su estado.
           </DialogDescription>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="absolute right-2 top-2"
-            @click="cerrarEditar"
-            aria-label="Cerrar"
-          >
-            <XIcon />
-          </Button>
         </DialogHeader>
         <div v-if="editando" class="space-y-4 py-2">
           <div class="space-y-2">
