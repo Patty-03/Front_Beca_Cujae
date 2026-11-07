@@ -77,7 +77,7 @@ function aEstudiante(back: unknown): Estudiante {
     zonaProcedencia: c.zonaProcedencia ?? undefined,
     universidadOrigen: c.universidadOrigen ?? undefined,
     deberes: [],
-  } as Estudiante
+  } as unknown as Estudiante
 }
 
 export class HttpEstudiantesRepository implements EstudiantesRepository {

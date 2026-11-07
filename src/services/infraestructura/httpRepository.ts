@@ -12,71 +12,35 @@ import type {
   EstadoConstructivo,
   InfraestructuraResumen,
 } from '@/types/infraestructura'
-import { apiErrorMessage, apiFetch, apiJson, apiText } from '@/lib/api'
+import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
 import { toCamelObject } from '@/lib/case'
 import type { InfraestructuraRepository } from './contracts'
 
 const BASE = '/api/v1'
 
-async function solicitarJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await apiFetch(`${BASE}${path}`, init)
-
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response))
-  }
-
-  return apiJson<T>(response)
+interface EstadoConstructivoBack {
+  id: number
+  nombre: string
+  habitable: boolean
 }
 
-async function solicitarVoid(path: string, init?: RequestInit): Promise<void> {
-  const response = await apiFetch(`${BASE}${path}`, init)
-
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response))
-  }
+interface EdificioBack {
+  id: number
+  nombre: string
 }
 
-async function solicitarCsv(path: string): Promise<string> {
-  const response = await apiFetch(`${BASE}${path}`, {
-    headers: { Accept: 'text/csv' },
-  })
-
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response))
-  }
-
-  return apiText(response)
+interface CuartoBack {
+  id: number
+  nombre: string
+  nombreCompleto?: string
+  capacidadMaxima?: number
+  escalera?: { id: number }
+  estadoConstructivo?: { id: number; nombre: string; habitable: boolean }
 }
 
-function aEstadoConstructivo(back: unknown): EstadoConstructivo {
-  const c = toCamelObject(back as Record<string, unknown>)
-  return {
-    id: Number(c.id),
-    nombre: String(c.nombre ?? ''),
-    habitable: Boolean(c.habitable),
-  } as EstadoConstructivo
-}
-
-function aEdificioResumen(back: unknown): EdificioResumen {
-  const c = toCamelObject(back as Record<string, unknown>)
-  const estado: EstadoConstructivo = {
-    id: 1,
-    nombre: 'Sin clasificar',
-    habitable: true,
-  }
-  return {
-    id: Number(c.id),
-    nombre: String(c.nombre ?? ''),
-    estado,
-    estadoSugerido: estado,
-    estadoManual: false,
-    observacionEstado: undefined,
-    escaleras: 0,
-    cuartos: 0,
-    capacidad: 0,
-    ocupados: 0,
-    ocupacionPct: 0,
-  } as EdificioResumen
+interface EscaleraBack {
+  id: number
+  nombre: string
 }
 
 interface EdificioArbol {
@@ -99,6 +63,55 @@ interface EdificioArbol {
   }>
 }
 
+async function solicitarJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await apiFetch(`${BASE}${path}`, init)
+
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response))
+  }
+
+  return apiJson<T>(response)
+}
+
+async function solicitarVoid(path: string, init?: RequestInit): Promise<void> {
+  const response = await apiFetch(`${BASE}${path}`, init)
+
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response))
+  }
+}
+
+function aEstadoConstructivo(back: unknown): EstadoConstructivo {
+  const c = toCamelObject(back as Record<string, unknown>) as unknown as EstadoConstructivoBack
+  return {
+    id: c.id,
+    nombre: c.nombre,
+    habitable: c.habitable,
+  }
+}
+
+function aEdificioResumen(back: unknown): EdificioResumen {
+  const c = toCamelObject(back as Record<string, unknown>) as unknown as EdificioBack
+  const estado: EstadoConstructivo = {
+    id: 1,
+    nombre: 'Sin clasificar',
+    habitable: true,
+  }
+  return {
+    id: c.id,
+    nombre: c.nombre,
+    estado,
+    estadoSugerido: estado,
+    estadoManual: false,
+    observacionEstado: undefined,
+    escaleras: 0,
+    cuartos: 0,
+    capacidad: 0,
+    ocupados: 0,
+    ocupacionPct: 0,
+  }
+}
+
 function aEdificioDetalle(arbol: EdificioArbol): EdificioDetalle {
   const base = aEdificioResumen(arbol)
   const escalerasDetalle: EscaleraResumen[] = arbol.escaleras.map((e) => ({
@@ -115,7 +128,11 @@ function aEdificioDetalle(arbol: EdificioArbol): EdificioDetalle {
       nombre: c.nombre,
       capacidadMaxima: c.capacidad_maxima,
       escaleraId: e.id,
-      estado: { id: 1, nombre: c.habitable ? 'habitable' : 'no habitable', habitable: c.habitable },
+      estado: {
+        id: 1,
+        nombre: c.habitable ? 'habitable' : 'no habitable',
+        habitable: c.habitable,
+      },
       ocupados: 0,
       ocupacionPct: 0,
       tieneAlojamientos: false,
@@ -125,12 +142,32 @@ function aEdificioDetalle(arbol: EdificioArbol): EdificioDetalle {
     ...base,
     escalerasDetalle,
     cuartosDetalle,
-  } as EdificioDetalle
+  }
+}
+
+function aCuartoResumen(back: unknown): CuartoResumen {
+  const c = toCamelObject(back as Record<string, unknown>) as unknown as CuartoBack
+  return {
+    id: c.id,
+    nombre: c.nombre,
+    capacidadMaxima: c.capacidadMaxima ?? 0,
+    escaleraId: c.escalera?.id ?? 0,
+    estado: {
+      id: c.estadoConstructivo?.id ?? 1,
+      nombre: c.estadoConstructivo?.nombre ?? 'habitable',
+      habitable: c.estadoConstructivo?.habitable ?? true,
+    },
+    ocupados: 0,
+    ocupacionPct: 0,
+    tieneAlojamientos: false,
+  }
 }
 
 export class HttpInfraestructuraRepository implements InfraestructuraRepository {
   async obtenerEstadosConstructivos(): Promise<EstadoConstructivo[]> {
-    const datos = await solicitarJson<unknown[]>('/estados-constructivos')
+    const datos = await solicitarJson<Record<string, unknown>[]>(
+      '/estados-constructivos',
+    )
     return datos.map((d) => aEstadoConstructivo(d))
   }
 
@@ -139,7 +176,7 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
   }
 
   async obtenerEdificios(): Promise<EdificioResumen[]> {
-    const datos = await solicitarJson<unknown[]>('/edificios')
+    const datos = await solicitarJson<Record<string, unknown>[]>('/edificios')
     return datos.map((d) => aEdificioResumen(d))
   }
 
@@ -153,7 +190,7 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
   }
 
   async crearEdificio(input: CrearEdificioInput): Promise<EdificioResumen> {
-    const creado = await solicitarJson<unknown>('/edificios', {
+    const creado = await solicitarJson<Record<string, unknown>>('/edificios', {
       method: 'POST',
       body: JSON.stringify({ nombre: input.nombre }),
     })
@@ -166,11 +203,13 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
   ): Promise<EdificioResumen> {
     const cambios: Record<string, unknown> = {}
     if (input.nombre != null) cambios.nombre = input.nombre
-    if (input.activo !== undefined) cambios.activo = input.activo
-    const actualizado = await solicitarJson<unknown>(`/edificios/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(cambios),
-    })
+    const actualizado = await solicitarJson<Record<string, unknown>>(
+      `/edificios/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(cambios),
+      },
+    )
     return aEdificioResumen(actualizado)
   }
 
@@ -182,15 +221,19 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
     _edificioId: number,
     input: CrearEscaleraInput,
   ): Promise<EscaleraResumen> {
-    const creado = await solicitarJson<unknown>('/escaleras', {
+    const creado = await solicitarJson<Record<string, unknown>>('/escaleras', {
       method: 'POST',
       body: JSON.stringify({ nombre: input.nombre, edificio_id: _edificioId }),
     })
-    const c = toCamelObject(creado as Record<string, unknown>)
+    const c = toCamelObject(creado) as unknown as EscaleraBack
     return {
-      id: Number(c.id),
-      nombre: String(c.nombre ?? ''),
-    } as EscaleraResumen
+      id: c.id,
+      nombre: c.nombre,
+      cuartos: 0,
+      capacidad: 0,
+      ocupados: 0,
+      ocupacionPct: 0,
+    }
   }
 
   async actualizarEscalera(
@@ -199,16 +242,22 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
   ): Promise<EscaleraResumen> {
     const cambios: Record<string, unknown> = {}
     if (input.nombre != null) cambios.nombre = input.nombre
-    if (input.activo !== undefined) cambios.activo = input.activo
-    const actualizado = await solicitarJson<unknown>(`/escaleras/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(cambios),
-    })
-    const c = toCamelObject(actualizado as Record<string, unknown>)
+    const actualizado = await solicitarJson<Record<string, unknown>>(
+      `/escaleras/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(cambios),
+      },
+    )
+    const c = toCamelObject(actualizado) as unknown as EscaleraBack
     return {
-      id: Number(c.id),
-      nombre: String(c.nombre ?? ''),
-    } as EscaleraResumen
+      id: c.id,
+      nombre: c.nombre,
+      cuartos: 0,
+      capacidad: 0,
+      ocupados: 0,
+      ocupacionPct: 0,
+    }
   }
 
   async eliminarEscalera(id: number): Promise<void> {
@@ -219,7 +268,7 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
     _escaleraId: number,
     input: CrearCuartoInput,
   ): Promise<CuartoResumen> {
-    const creado = await solicitarJson<unknown>('/cuartos', {
+    const creado = await solicitarJson<Record<string, unknown>>('/cuartos', {
       method: 'POST',
       body: JSON.stringify({
         nombre: input.nombre,
@@ -228,12 +277,7 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
         estado_constructivo_id: input.estadoConstructivoId,
       }),
     })
-    const c = toCamelObject(creado as Record<string, unknown>)
-    return {
-      id: Number(c.id),
-      nombre: String(c.nombre ?? ''),
-      nombreCompleto: String(c.nombreCompleto ?? c.nombre ?? ''),
-    } as CuartoResumen
+    return aCuartoResumen(creado)
   }
 
   async actualizarCuarto(
@@ -245,17 +289,14 @@ export class HttpInfraestructuraRepository implements InfraestructuraRepository 
     if (input.capacidadMaxima != null) cambios.capacidad_maxima = input.capacidadMaxima
     if (input.estadoConstructivoId != null)
       cambios.estado_constructivo_id = input.estadoConstructivoId
-    if (input.activo !== undefined) cambios.activo = input.activo
-    const actualizado = await solicitarJson<unknown>(`/cuartos/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(cambios),
-    })
-    const c = toCamelObject(actualizado as Record<string, unknown>)
-    return {
-      id: Number(c.id),
-      nombre: String(c.nombre ?? ''),
-      nombreCompleto: String(c.nombreCompleto ?? c.nombre ?? ''),
-    } as CuartoResumen
+    const actualizado = await solicitarJson<Record<string, unknown>>(
+      `/cuartos/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(cambios),
+      },
+    )
+    return aCuartoResumen(actualizado)
   }
 
   async eliminarCuarto(id: number): Promise<void> {

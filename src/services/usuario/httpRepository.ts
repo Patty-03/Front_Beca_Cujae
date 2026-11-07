@@ -5,28 +5,7 @@ import type {
   Role,
   UsuarioAdmin,
 } from '@/types/auth'
-import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
 import type { UsuarioRepository } from './contracts'
-
-const BASE = '/api/v1/usuarios'
-
-async function solicitarJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await apiFetch(`${BASE}${path}`, init)
-
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response))
-  }
-
-  return apiJson<T>(response)
-}
-
-async function solicitarVoid(path: string, init?: RequestInit): Promise<void> {
-  const response = await apiFetch(`${BASE}${path}`, init)
-
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response))
-  }
-}
 
 export class HttpUsuarioRepository implements UsuarioRepository {
   async obtenerUsuarios(): Promise<UsuarioAdmin[]> {

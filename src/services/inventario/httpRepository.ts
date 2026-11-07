@@ -19,14 +19,6 @@ async function solicitarJson<T>(path: string, init?: RequestInit): Promise<T> {
   return apiJson<T>(response)
 }
 
-async function solicitarVoid(path: string, init?: RequestInit): Promise<void> {
-  const response = await apiFetch(`${BASE}${path}`, init)
-
-  if (!response.ok) {
-    throw new Error(await apiErrorMessage(response))
-  }
-}
-
 function tipoMedioFront(nombre: string | undefined): MedioDeCuarto['tipo'] {
   const validos: MedioDeCuarto['tipo'][] = [
     'taquilla',
@@ -47,22 +39,30 @@ function tipoMedioFront(nombre: string | undefined): MedioDeCuarto['tipo'] {
   return 'otro'
 }
 
+interface MedioBack {
+  id: number
+  cuarto?: { id: number }
+  cuartoId?: number
+  tipoMedio?: { nombre?: string }
+  usable?: boolean
+}
+
 function aMedioDeCuarto(back: unknown): MedioDeCuarto {
-  const c = toCamelObject(back as Record<string, unknown>)
+    const c = toCamelObject(back as Record<string, unknown>) as unknown as MedioBack
   const tipoMedio: { nombre?: string } | undefined = c.tipoMedio
   return {
-    id: Number(c.id),
+    id: c.id,
     cuartoId: Number(c.cuarto?.id ?? c.cuartoId ?? 0),
     tipo: tipoMedioFront(tipoMedio?.nombre),
     cantidad: 1,
-    estado: c.usable === false ? 'danado' : 'bueno',
+    estado: c.usable === false ? 'daniado' : 'bueno',
     observaciones: undefined,
-  } as MedioDeCuarto
+  }
 }
 
 export class HttpInventarioRepository implements InventarioRepository {
   async obtenerMediosCuarto(cuartoId: number): Promise<MedioDeCuarto[]> {
-    const datos = await solicitarJson<unknown[]>(`?cuarto_id=${cuartoId}`)
+    const datos = await solicitarJson<Record<string, unknown>[]>(`?cuarto_id=${cuartoId}`)
     return datos.map((d) => aMedioDeCuarto(d))
   }
 
