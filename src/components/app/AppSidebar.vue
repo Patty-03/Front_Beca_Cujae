@@ -10,6 +10,7 @@ import {
   GraduationCapIcon,
   HouseIcon,
   LogOutIcon,
+  UserIcon,
   UsersIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -109,6 +110,13 @@ const navigation: NavGroup[] = [
         icon: ClipboardCheckIcon,
         exact: true,
         permission: 'evaluaciones:read',
+      },
+      {
+        label: 'Mi Perfil',
+        to: '/estudiante',
+        icon: UserIcon,
+        exact: true,
+        permission: 'estudiantes:read',
       },
     ],
   },

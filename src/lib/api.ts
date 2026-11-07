@@ -1,5 +1,15 @@
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
+let accessToken: string | null = null
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token
+}
+
+export function getAccessToken(): string | null {
+  return accessToken
+}
+
 export function apiUrl(path: string): string {
   return `${API_BASE}${path}`
 }
@@ -25,9 +35,14 @@ function crearHeaders(init?: RequestInit): Headers {
   const headers = new Headers(init?.headers)
   if (!headers.has('Accept')) headers.set('Accept', 'application/json')
 
-  if (init?.body && !headers.has('Content-Type')) {
+  const body = init?.body
+  const esForm = body instanceof URLSearchParams
+  if (body && !esForm && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
+
+  const acceso = getAccessToken()
+  if (acceso) headers.set('Authorization', `Bearer ${acceso}`)
 
   const metodo = (init?.method ?? 'GET').toUpperCase()
   const csrf = leerCookie('csrf_token')
@@ -56,6 +71,10 @@ export async function apiErrorMessage(response: Response): Promise<string> {
     if (typeof data === 'object' && data !== null && 'message' in data) {
       const message = data.message
       if (typeof message === 'string' && message.trim()) return message
+    }
+    if (typeof data === 'object' && data !== null && 'detail' in data) {
+      const detail = data.detail
+      if (typeof detail === 'string' && detail.trim()) return detail
     }
   } catch {
     // La respuesta no es JSON; se usa el mensaje genérico.

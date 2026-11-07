@@ -1,8 +1,14 @@
-import type { ActualizarUsuarioInput, CrearUsuarioInput, Permission, Role, UsuarioAdmin } from '@/types/auth'
+import type {
+  ActualizarUsuarioInput,
+  CrearUsuarioInput,
+  Permission,
+  Role,
+  UsuarioAdmin,
+} from '@/types/auth'
 import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
 import type { UsuarioRepository } from './contracts'
 
-const BASE = '/api/usuarios'
+const BASE = '/api/v1/usuarios'
 
 async function solicitarJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await apiFetch(`${BASE}${path}`, init)
@@ -23,39 +29,30 @@ async function solicitarVoid(path: string, init?: RequestInit): Promise<void> {
 }
 
 export class HttpUsuarioRepository implements UsuarioRepository {
-  obtenerUsuarios(): Promise<UsuarioAdmin[]> {
-    return solicitarJson('')
+  async obtenerUsuarios(): Promise<UsuarioAdmin[]> {
+    throw new Error('Pendiente de backend: GET /api/v1/usuarios')
   }
 
-  crearUsuario(input: CrearUsuarioInput): Promise<UsuarioAdmin> {
-    return solicitarJson('', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    })
+  async crearUsuario(_input: CrearUsuarioInput): Promise<UsuarioAdmin> {
+    throw new Error('Pendiente de backend: POST /api/v1/usuarios')
   }
 
-  actualizarUsuario(input: ActualizarUsuarioInput): Promise<UsuarioAdmin> {
-    return solicitarJson(`/${input.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(input),
-    })
+  async actualizarUsuario(_input: ActualizarUsuarioInput): Promise<UsuarioAdmin> {
+    throw new Error('Pendiente de backend: PATCH /api/v1/usuarios/{id}')
   }
 
-  eliminarUsuario(id: string): Promise<void> {
-    return solicitarVoid(`/${id}`, { method: 'DELETE' })
+  async eliminarUsuario(_id: string): Promise<void> {
+    throw new Error('Pendiente de backend: DELETE /api/v1/usuarios/{id}')
   }
 
-  asignarRol(usuarioId: string, rol: Role): Promise<UsuarioAdmin> {
-    return solicitarJson(`/${usuarioId}/roles`, {
-      method: 'PATCH',
-      body: JSON.stringify({ rol }),
-    })
+  async asignarRol(_usuarioId: string, _rol: Role): Promise<UsuarioAdmin> {
+    throw new Error('Pendiente de backend: PATCH /api/v1/usuarios/{id}/roles')
   }
 
-  actualizarPermisosRol(rol: Role, permisos: Permission[]): Promise<{ rol: Role; permisos: Permission[] }> {
-    return solicitarJson(`/roles/${rol}/permisos`, {
-      method: 'PATCH',
-      body: JSON.stringify({ permisos }),
-    })
+  async actualizarPermisosRol(
+    _rol: Role,
+    _permisos: Permission[],
+  ): Promise<{ rol: Role; permisos: Permission[] }> {
+    throw new Error('Pendiente de backend: PATCH /api/v1/roles/{rol}/permisos')
   }
 }

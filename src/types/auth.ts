@@ -9,6 +9,7 @@ export type Permission =
   | 'evaluaciones:read'
   | 'usuarios:manage'
   | 'roles:manage'
+  | 'documentos:manage'
 
 export interface SessionUser {
   id: string

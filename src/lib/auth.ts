@@ -11,6 +11,7 @@ export const PERMISSIONS: Permission[] = [
   'evaluaciones:read',
   'usuarios:manage',
   'roles:manage',
+  'documentos:manage',
 ]
 
 export const ETIQUETAS_ROL: Record<Role, string> = {

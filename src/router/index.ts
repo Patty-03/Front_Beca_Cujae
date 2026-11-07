@@ -59,6 +59,16 @@ const router = createRouter({
           },
         },
         {
+          path: 'estudiante',
+          name: 'estudiante',
+          component: () => import('@/views/EstudianteView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['estudiantes:read'],
+            title: 'Mi Perfil',
+          },
+        },
+        {
           path: 'estudiantes',
           name: 'estudiantes',
           component: () => import('@/views/EstudiantesView.vue'),
@@ -68,6 +78,18 @@ const router = createRouter({
             title: 'Estudiantes',
             description:
               'AquÃ­ podrÃ¡s consultar la informaciÃ³n y el estado de los estudiantes residentes.',
+          },
+        },
+        {
+          path: 'documentos-admin',
+          name: 'documentos-admin',
+          component: () => import('@/views/DocumentosAdminView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['documentos:manage'],
+            title: 'Documentos para firma',
+            description:
+              'AquÃ­ puede subir documentos que los estudiantes deben firmar digitalmente.',
           },
         },
         {
