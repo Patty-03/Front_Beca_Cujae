@@ -47,7 +47,7 @@ watch(open, (abierto) => {
   if (!abierto) return
   nombre.value = props.edificio?.nombre ?? ''
   estadoId.value = String(
-    props.edificio?.estado.id ?? props.edificio?.estadoSugerido.id ?? props.estados[0]?.id ?? '',
+    props.edificio?.estado.id ?? props.edificio?.estadoSugerido.id ?? props.estados?.[0]?.id ?? '',
   )
   observacion.value = props.edificio?.observacionEstado ?? ''
   forzarManual.value = props.edificio?.estadoManual ?? false
@@ -151,7 +151,14 @@ async function guardar() {
               Fijar manualmente
             </label>
           </div>
-          <Select v-model="estadoId">
+          <div v-if="!props.estados?.length" class="text-xs text-muted-foreground">
+            No hay estados constructivos disponibles. Verifique que el backend esté en ejecución.
+          </div>
+          <Select
+            v-else
+            v-model="estadoId"
+            :disabled="!props.estados?.length"
+          >
             <SelectTrigger id="edificio-estado" class="w-full">
               <SelectValue placeholder="Seleccione un estado" />
             </SelectTrigger>
