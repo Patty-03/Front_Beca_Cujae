@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Permission, Role, Session, SessionUser } from '@/types/auth'
 import { crearAuthGateway, modoDemo } from '@/services/auth'
-import { validarEmail, validarPassword } from '@/lib/validation'
+import { validarEmail, validarPassword, validarUsuario } from '@/lib/validation'
 
 const LEGACY_STORAGE_KEY = 'beca-cujae-user'
 
@@ -57,13 +57,13 @@ export const useAuthStore = defineStore('auth', () => {
     await initializePromise
   }
 
-  async function login(email: string, password: string, remember = false): Promise<void> {
+  async function login(usuario: string, password: string, remember = false): Promise<void> {
     isLoading.value = true
     sessionError.value = ''
 
     try {
       const credentials = {
-        email: validarEmail(email),
+        email: modoDemo ? validarEmail(usuario) : validarUsuario(usuario),
         password: validarPassword(password),
         remember,
       }

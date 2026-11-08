@@ -320,4 +320,11 @@ export const demoEstudiantesRepository: EstudiantesRepository = {
     if (!asignacion) throw new Error('No se pudo registrar la asignación de cuarto.')
     return asignacion
   },
+
+  async eliminarEstudiante(id) {
+    await esperar(180)
+    const indice = registros.findIndex((item) => item.id === id)
+    if (indice === -1) throw new Error('Estudiante no encontrado.')
+    registros.splice(indice, 1)
+  },
 }

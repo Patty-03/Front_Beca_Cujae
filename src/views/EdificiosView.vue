@@ -96,10 +96,12 @@ async function cargarEscalerasParaCuarto(edificioId: number) {
   }
 }
 
-async function alCambiarEdificioCuarto(edificioIdStr: any) {
+async function alCambiarEdificioCuarto(edificioIdStr: unknown) {
   if (!edificioIdStr) return
+  const edificioId = Number(edificioIdStr)
+  if (!Number.isFinite(edificioId)) return
   edificioSeleccionadoCuartoId.value = String(edificioIdStr)
-  await cargarEscalerasParaCuarto(Number(edificioIdStr))
+  await cargarEscalerasParaCuarto(edificioId)
 }
 
 function continuarACuartoDialog() {

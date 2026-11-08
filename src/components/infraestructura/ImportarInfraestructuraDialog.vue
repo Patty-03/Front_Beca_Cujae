@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import type { EstadoConstructivo } from '@/types/infraestructura'
-import type {
-  FilaInfraestructuraImportada,
-  PrevisualizacionImportacionInfraestructura,
-} from '@/lib/importarInfraestructura'
+import type { PrevisualizacionImportacionInfraestructura } from '@/lib/importarInfraestructura'
 import { computed, ref, watch } from 'vue'
 import {
-  CheckCircle2Icon,
   CircleAlertIcon,
   DownloadIcon,
-  FileSpreadsheetIcon,
   LoaderCircleIcon,
   UploadIcon,
-  XCircleIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -40,8 +34,6 @@ import { leerArchivoInfraestructura } from '@/lib/leerExcelInfraestructura'
 import { descargarPlantillaInfraestructura } from '@/lib/plantillaInfraestructura'
 import { formatNumber } from '@/lib/format'
 import {
-  actualizarEdificio,
-  actualizarEscalera,
   crearCuarto,
   crearEdificio,
   crearEscalera,
@@ -131,15 +123,7 @@ async function confirmarImportacion() {
     const edificiosActuales = await obtenerEdificios()
     const estadosMap = new Map(props.estados.map((e) => [e.nombre.toLowerCase().trim(), e.id]))
 
-    // Agrupar jerárquicamente: Edificio -> Escalera -> Cuartos
-    const mapaEdificios = new Map<string, { id: number; estadoId: number; escaleras: Map<string, { id: number; cuartos: FilaInfraestructuraImportada[] }> }>()
-
-    for (const ed of edificiosActuales) {
-      // Necesitamos detalle de escaleras de cada edificio existente
-      // ...
-    }
-
-    // Simplificación robusta basada en operaciones de servicio
+    // Operaciones de servicio
     for (const fila of validas) {
       let edificioReg = edificiosActuales.find(
         (e) => e.nombre.toLowerCase() === fila.edificio.toLowerCase(),

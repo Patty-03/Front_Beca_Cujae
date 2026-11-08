@@ -23,7 +23,7 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const email = ref('')
+const usuario = ref('')
 const password = ref('')
 const remember = ref(false)
 const showPassword = ref(false)
@@ -32,7 +32,7 @@ const passwordType = computed(() => (showPassword.value ? 'text' : 'password'))
 
 async function handleSubmit() {
   try {
-    await auth.login(email.value, password.value, remember.value)
+    await auth.login(usuario.value, password.value, remember.value)
     toast.success('Bienvenido a CUJAE Residencia', {
       description: auth.isDemo
         ? 'Sesión demo iniciada. No se conservará al recargar.'
@@ -109,7 +109,7 @@ async function handleSubmit() {
             for="username"
             class="mb-1 block text-xs font-semibold tracking-wider text-slate-700 uppercase"
           >
-            Correo electrónico
+            Usuario
           </Label>
           <div class="relative">
             <div
@@ -119,9 +119,9 @@ async function handleSubmit() {
             </div>
             <Input
               id="username"
-              v-model="email"
-              type="email"
-              placeholder="usuario@cujae.edu.cu"
+              v-model="usuario"
+              type="text"
+              placeholder="Usuario"
               autocomplete="username"
               required
               class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-3 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-500 focus:bg-white focus-visible:ring-2"

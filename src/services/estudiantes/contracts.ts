@@ -15,4 +15,5 @@ export interface EstudiantesRepository {
   importarEstudiantes(estudiantes: EstudianteImportado[]): Promise<ResultadoImportacion>
   sugerirCuartos(estudianteId: number): Promise<SugerenciaCuarto[]>
   asignarCuarto(estudianteId: number, input: AsignarCuartoInput): Promise<AsignacionCuarto>
+  eliminarEstudiante(id: number): Promise<void>
 }

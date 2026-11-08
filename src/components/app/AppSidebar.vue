@@ -244,7 +244,7 @@ async function handleLogout() {
                 <div class="grid flex-1 text-left text-sm leading-tight">
                   <span class="truncate font-semibold">{{ auth.user?.name }}</span>
                   <span class="text-muted-foreground truncate text-xs">
-                    {{ auth.user?.email }}
+                    {{ auth.user?.email || rolEtiqueta }}
                   </span>
                 </div>
                 <ChevronsUpDownIcon class="ml-auto size-4" />

@@ -91,7 +91,7 @@ async function leerSesionDesdeToken(): Promise<Session> {
     user: {
       id: String(data.id),
       name: data.nombre,
-      email: '', // El backend no devuelve el email en /login/me
+      email: '',
       roles,
       permissions: permisos,
     },
@@ -118,7 +118,7 @@ export class HttpAuthGateway implements AuthGateway {
     })
 
     if (response.status === 401) {
-      throw new Error('Correo o contraseña incorrectos.')
+      throw new Error('Usuario o contraseña incorrectos.')
     }
     if (response.status === 429) {
       throw new Error('Demasiados intentos. Espera antes de volver a intentarlo.')
@@ -155,13 +155,5 @@ export class HttpAuthGateway implements AuthGateway {
     localStorage.removeItem(TOKEN_KEY)
     setAccessToken(null)
     sesionCache = null
-    try {
-      const response = await apiFetch('/api/v1/auth/logout', { method: 'POST' })
-      if (!response.ok && response.status !== 404 && response.status !== 401) {
-        throw new Error(await apiErrorMessage(response))
-      }
-    } catch {
-      // El backend aún no expone /auth/logout; se limpia la sesión localmente.
-    }
   }
 }

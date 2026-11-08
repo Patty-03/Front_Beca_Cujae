@@ -15,8 +15,7 @@ export function esSesion(value: unknown): value is Session {
     user.id.trim() === '' ||
     typeof user.name !== 'string' ||
     user.name.trim() === '' ||
-    typeof user.email !== 'string' ||
-    user.email.trim() === ''
+    typeof user.email !== 'string'
   ) {
     return false
   }

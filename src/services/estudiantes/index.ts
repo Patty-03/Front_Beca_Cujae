@@ -24,3 +24,5 @@ export const sugerirCuartos = (estudianteId: number) =>
 
 export const asignarCuarto = (estudianteId: number, input: AsignarCuartoInput) =>
   repositorio.asignarCuarto(estudianteId, input)
+
+export const eliminarEstudiante = (id: number) => repositorio.eliminarEstudiante(id)

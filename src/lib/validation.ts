@@ -134,6 +134,28 @@ export function validarEmail(value: unknown): string {
   return email
 }
 
+export function validarUsuario(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new Error('Introduce un nombre de usuario válido.')
+  }
+
+  const usuario = normalizarTexto(value)
+
+  if (!usuario) {
+    throw new Error('El nombre de usuario es obligatorio.')
+  }
+
+  if (usuario.length > 60) {
+    throw new Error('El nombre de usuario no puede superar los 60 caracteres.')
+  }
+
+  if (tieneCaracteresDeControl(usuario)) {
+    throw new Error('El nombre de usuario contiene caracteres no permitidos.')
+  }
+
+  return usuario
+}
+
 export function validarPassword(value: unknown): string {
   if (typeof value !== 'string') {
     throw new Error('La contraseña es obligatoria.')
