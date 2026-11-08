@@ -15,24 +15,28 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import DemoModeBanner from '@/components/app/DemoModeBanner.vue'
+import InsecureContextBanner from '@/components/app/InsecureContextBanner.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const email = ref('ing.juan.perez@cujae.edu.cu')
-const password = ref('Contraseña2026*')
-const remember = ref(true)
+const usuario = ref('')
+const password = ref('')
+const remember = ref(false)
 const showPassword = ref(false)
 
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'))
 
 async function handleSubmit() {
   try {
-    await auth.login(email.value, password.value)
+    await auth.login(usuario.value, password.value, remember.value)
     toast.success('Bienvenido a CUJAE Residencia', {
-      description: 'Sesión iniciada correctamente.',
+      description: auth.isDemo
+        ? 'Sesión demo iniciada. No se conservará al recargar.'
+        : 'Sesión iniciada correctamente.',
     })
 
     const redirect =
@@ -76,6 +80,17 @@ async function handleSubmit() {
     <main
       class="border-brand-border m-auto flex w-full max-w-sm flex-col rounded-2xl border bg-white p-6 shadow-xl"
     >
+      <InsecureContextBanner class="mb-4" />
+      <DemoModeBanner class="mb-4" />
+
+      <p
+        v-if="auth.sessionError"
+        role="alert"
+        class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800"
+      >
+        {{ auth.sessionError }}
+      </p>
+
       <div class="mb-6 text-center">
         <div
           class="from-brand-navy to-brand-primary mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-tr text-white shadow-md"
@@ -104,12 +119,12 @@ async function handleSubmit() {
             </div>
             <Input
               id="username"
-              v-model="email"
+              v-model="usuario"
               type="text"
-              placeholder="usuario@cujae.edu.cu"
+              placeholder="Usuario"
               autocomplete="username"
               required
-              class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-3 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:bg-white focus-visible:ring-2"
+              class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-3 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-500 focus:bg-white focus-visible:ring-2"
             />
           </div>
         </div>
@@ -122,7 +137,6 @@ async function handleSubmit() {
             >
               Contraseña
             </Label>
-            <a href="#" class="text-[11px] font-medium text-blue-600 hover:underline">¿Olvidó?</a>
           </div>
           <div class="relative">
             <div
@@ -137,11 +151,11 @@ async function handleSubmit() {
               placeholder="••••••••••••"
               autocomplete="current-password"
               required
-              class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-10 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:bg-white focus-visible:ring-2"
+              class="focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-12 rounded-xl border-slate-200 bg-slate-50 pr-10 pl-10 text-sm text-slate-900 transition-all placeholder:text-slate-500 focus:bg-white focus-visible:ring-2"
             />
             <button
               type="button"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition-colors hover:text-slate-600"
+              class="absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400 transition-colors hover:text-slate-600"
               :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
               @click="showPassword = !showPassword"
             >
@@ -151,15 +165,20 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <div class="flex items-center justify-between pt-1">
+        <div class="space-y-1 pt-1">
           <label class="flex cursor-pointer items-center gap-2">
             <input
               v-model="remember"
               type="checkbox"
-              class="accent-brand-primary focus:ring-brand-primary size-4 rounded border-slate-300"
+              :disabled="auth.isDemo"
+              :title="auth.isDemo ? 'No disponible en modo demo' : undefined"
+              class="accent-brand-primary focus:ring-brand-primary size-4 rounded border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <span class="text-xs text-slate-600">Mantener sesión iniciada</span>
           </label>
+          <p v-if="auth.isDemo" class="text-muted-foreground pl-6 text-[11px]">
+            El modo demo no conserva la sesión al recargar.
+          </p>
         </div>
 
         <Button

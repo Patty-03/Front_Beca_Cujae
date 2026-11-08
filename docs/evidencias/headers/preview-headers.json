@@ -1,0 +1,10 @@
+﻿{
+    "Vary":  "Origin",
+    "Keep-Alive":  "timeout=5",
+    "Content-Length":  "626",
+    "Content-Type":  "text/html",
+    "ETag":  "W/\"272-i89SZl2PNtp8XHRUrqSHG3gzJIc\"",
+    "Date":  "Sun, 01 Nov 2026 22:16:35 GMT",
+    "Connection":  "keep-alive",
+    "Cache-Control":  "no-cache"
+}

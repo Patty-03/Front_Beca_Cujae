@@ -18,9 +18,9 @@ const props = withDefaults(
 
 const tonos: Record<string, string> = {
   primary: 'bg-primary/10 text-primary',
-  emerald: 'bg-emerald-500/10 text-emerald-600',
-  amber: 'bg-amber-500/10 text-amber-600',
-  sky: 'bg-sky-500/10 text-sky-600',
+  emerald: 'bg-emerald-500/10 text-emerald-700',
+  amber: 'bg-amber-500/10 text-amber-700',
+  sky: 'bg-sky-500/10 text-sky-700',
 }
 </script>
 

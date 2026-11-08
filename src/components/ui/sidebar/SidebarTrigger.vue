@@ -19,10 +19,10 @@ const { toggleSidebar } = useSidebar()
     data-slot="sidebar-trigger"
     variant="ghost"
     size="icon-sm"
-    :class="cn('', props.class)"
+    :class="cn('size-11 md:size-8', props.class)"
     @click="toggleSidebar"
   >
     <PanelLeftIcon class="cn-rtl-flip" />
-    <span class="sr-only">Toggle Sidebar</span>
+    <span class="sr-only">Alternar menú lateral</span>
   </Button>
 </template>

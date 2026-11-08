@@ -60,7 +60,13 @@ function showNotifications() {
     </Breadcrumb>
 
     <div class="ml-auto flex items-center gap-2">
-      <Button variant="ghost" size="icon-sm" aria-label="Notificaciones" @click="showNotifications">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="size-11 md:size-8"
+        aria-label="Notificaciones"
+        @click="showNotifications"
+      >
         <BellIcon class="size-4" />
       </Button>
     </div>

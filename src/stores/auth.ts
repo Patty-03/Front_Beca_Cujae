@@ -1,80 +1,113 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { User } from '@/types'
+import type { Permission, Role, Session, SessionUser } from '@/types/auth'
+import { crearAuthGateway, modoDemo } from '@/services/auth'
+import { validarEmail, validarPassword, validarUsuario } from '@/lib/validation'
 
-const STORAGE_KEY = 'beca-cujae-user'
+const LEGACY_STORAGE_KEY = 'beca-cujae-user'
 
-function loadUser(): User | null {
+type AuthStatus = 'unknown' | 'anonymous' | 'authenticated'
+
+function limpiarSesionLegacy(): void {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-
-    const parsed: unknown = JSON.parse(raw)
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'id' in parsed &&
-      'name' in parsed &&
-      'email' in parsed &&
-      'role' in parsed
-    ) {
-      return parsed as User
-    }
+    localStorage.removeItem(LEGACY_STORAGE_KEY)
   } catch {
-    localStorage.removeItem(STORAGE_KEY)
+    // El almacenamiento puede estar deshabilitado; no hay nada que limpiar.
   }
-
-  return null
 }
 
-function displayName(email: string): string {
-  const [localPart = ''] = email.split('@')
-  const name = localPart
-    .split(/[._-]/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-
-  return name || 'Estudiante CUJAE'
+function mensajeError(caught: unknown): string {
+  return caught instanceof Error ? caught.message : 'No se pudo completar la operación.'
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<User | null>(loadUser())
-  const isLoading = ref(false)
-  const isAuthenticated = computed(() => user.value !== null)
+  const gateway = crearAuthGateway()
 
-  async function login(email: string, password: string) {
+  const session = ref<Session | null>(null)
+  const user = ref<SessionUser | null>(null)
+  const status = ref<AuthStatus>('unknown')
+  const isLoading = ref(false)
+  const sessionError = ref('')
+  const isAuthenticated = computed(() => status.value === 'authenticated' && user.value !== null)
+  const isDemo = modoDemo
+
+  let initializePromise: Promise<void> | null = null
+
+  function aplicarSesion(nextSession: Session | null): void {
+    session.value = nextSession
+    user.value = nextSession?.user ?? null
+    status.value = nextSession ? 'authenticated' : 'anonymous'
+  }
+
+  async function initialize(): Promise<void> {
+    if (status.value !== 'unknown') return
+
+    initializePromise ??= (async () => {
+      limpiarSesionLegacy()
+
+      try {
+        aplicarSesion(await gateway.getSession())
+        sessionError.value = ''
+      } catch (caught) {
+        aplicarSesion(null)
+        sessionError.value = mensajeError(caught)
+      }
+    })()
+
+    await initializePromise
+  }
+
+  async function login(usuario: string, password: string, remember = false): Promise<void> {
     isLoading.value = true
+    sessionError.value = ''
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700))
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw new Error('Introduce un correo electrónico válido.')
+      const credentials = {
+        email: modoDemo ? validarEmail(usuario) : validarUsuario(usuario),
+        password: validarPassword(password),
+        remember,
       }
 
-      if (password.trim().length < 4) {
-        throw new Error('La contraseña debe tener al menos 4 caracteres.')
-      }
-
-      const nextUser: User = {
-        id: crypto.randomUUID(),
-        name: displayName(email),
-        email,
-        role: 'Estudiante de pregrado',
-      }
-
-      user.value = nextUser
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser))
+      aplicarSesion(await gateway.login(credentials))
+    } catch (caught) {
+      sessionError.value = mensajeError(caught)
+      throw caught
     } finally {
       isLoading.value = false
     }
   }
 
-  function logout() {
-    user.value = null
-    localStorage.removeItem(STORAGE_KEY)
+  async function logout(): Promise<void> {
+    isLoading.value = true
+
+    try {
+      await gateway.logout()
+    } finally {
+      aplicarSesion(null)
+      isLoading.value = false
+    }
   }
 
-  return { user, isLoading, isAuthenticated, login, logout }
+  function can(permission: Permission): boolean {
+    return user.value?.permissions.includes(permission) ?? false
+  }
+
+  function hasRole(role: Role): boolean {
+    return user.value?.roles.includes(role) ?? false
+  }
+
+  return {
+    session,
+    user,
+    status,
+    isLoading,
+    sessionError,
+    isAuthenticated,
+    isDemo,
+    initialize,
+    login,
+    logout,
+    can,
+    hasRole,
+  }
 })

@@ -2,13 +2,20 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from 'cn'
 
-const props = defineProps<{
-  class?: HTMLAttributes['class']
-}>()
+const props = withDefaults(
+  defineProps<{
+    class?: HTMLAttributes['class']
+    as?: string
+  }>(),
+  {
+    as: 'h2',
+  },
+)
 </script>
 
 <template>
-  <div
+  <component
+    :is="props.as"
     data-slot="card-title"
     :class="
       cn(
@@ -18,5 +25,5 @@ const props = defineProps<{
     "
   >
     <slot />
-  </div>
+  </component>
 </template>

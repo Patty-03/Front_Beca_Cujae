@@ -101,7 +101,6 @@ const modulos: Modulo[] = [
           :key="modulo.ruta"
           :to="modulo.ruta"
           class="group block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-          :aria-label="`Abrir módulo ${modulo.nombre}`"
         >
           <Card
             class="h-full gap-0 py-0 shadow-xs transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md group-hover:ring-primary/40"

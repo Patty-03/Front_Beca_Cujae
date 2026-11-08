@@ -21,14 +21,16 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 </script>
 
 <template>
-  <div
+  <nav
     v-if="collapsible === 'none'"
     data-slot="sidebar"
+    role="navigation"
+    aria-label="Navegación principal"
     :class="cn('bg-sidebar text-sidebar-foreground flex w-(--sidebar-width) flex-col', props.class)"
     v-bind="$attrs"
   >
     <slot />
-  </div>
+  </nav>
 
   <Sheet v-else-if="isMobile" :open="openMobile" v-bind="$attrs" @update:open="setOpenMobile">
     <SheetContent
@@ -42,12 +44,12 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       }"
     >
       <SheetHeader class="sr-only">
-        <SheetTitle>Sidebar</SheetTitle>
-        <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+        <SheetTitle>Navegación</SheetTitle>
+        <SheetDescription>Menú lateral de navegación de la residencia.</SheetDescription>
       </SheetHeader>
-      <div class="flex h-full w-full flex-col">
+      <nav role="navigation" aria-label="Navegación principal" class="flex h-full w-full flex-col">
         <slot />
-      </div>
+      </nav>
     </SheetContent>
   </Sheet>
 
@@ -74,8 +76,10 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
         )
       "
     />
-    <div
+    <nav
       data-slot="sidebar-container"
+      role="navigation"
+      aria-label="Navegación principal"
       :data-side="side"
       :class="
         cn(
@@ -99,6 +103,6 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       >
         <slot />
       </div>
-    </div>
+    </nav>
   </div>
 </template>

@@ -1,0 +1,173 @@
+export const LIMITES = {
+  nombreEdificio: 80,
+  nombreEscalera: 80,
+  nombreCuarto: 40,
+  capacidadMinima: 1,
+  capacidadMaxima: 20,
+  cantidadMedioMinima: 1,
+  cantidadMedioMaxima: 999,
+  observacionesMedio: 200,
+  descripcionMaxima: 200,
+  email: 254,
+  passwordMinima: 8,
+  passwordMaxima: 128,
+} as const
+
+function tieneCaracteresDeControl(value: string): boolean {
+  for (const caracter of value) {
+    const codigo = caracter.codePointAt(0) ?? 0
+    if (codigo <= 0x1f || codigo === 0x7f) return true
+  }
+
+  return false
+}
+
+export function normalizarTexto(value: string): string {
+  return value.trim().replace(/\s+/g, ' ')
+}
+
+export function normalizarParaComparar(value: string): string {
+  return normalizarTexto(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+export function validarNombre(value: unknown, entidad: string, maximo: number): string {
+  if (typeof value !== 'string') {
+    throw new Error(`El nombre del ${entidad} es obligatorio.`)
+  }
+
+  const nombre = normalizarTexto(value)
+
+  if (nombre.length < 3) {
+    throw new Error(`El nombre del ${entidad} debe tener al menos 3 caracteres.`)
+  }
+
+  if (nombre.length > maximo) {
+    throw new Error(`El nombre del ${entidad} no puede superar los ${maximo} caracteres.`)
+  }
+
+  if (tieneCaracteresDeControl(nombre)) {
+    throw new Error(`El nombre del ${entidad} contiene caracteres no permitidos.`)
+  }
+
+  return nombre
+}
+
+export function validarCapacidad(value: unknown): number {
+  const capacidad = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isInteger(capacidad)) {
+    throw new Error('La capacidad del cuarto debe ser un número entero.')
+  }
+
+  if (capacidad < LIMITES.capacidadMinima || capacidad > LIMITES.capacidadMaxima) {
+    throw new Error(
+      `La capacidad del cuarto debe estar entre ${LIMITES.capacidadMinima} y ${LIMITES.capacidadMaxima}.`,
+    )
+  }
+
+  return capacidad
+}
+
+export function validarCantidadMedio(value: unknown): number {
+  const cantidad = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isInteger(cantidad)) {
+    throw new Error('La cantidad del medio debe ser un número entero.')
+  }
+
+  if (
+    cantidad < LIMITES.cantidadMedioMinima ||
+    cantidad > LIMITES.cantidadMedioMaxima
+  ) {
+    throw new Error(
+      `La cantidad del medio debe estar entre ${LIMITES.cantidadMedioMinima} y ${LIMITES.cantidadMedioMaxima}.`,
+    )
+  }
+
+  return cantidad
+}
+
+export function validarObservacionesMedio(value: string): string | undefined {
+  const observaciones = normalizarTexto(value)
+
+  if (!observaciones) return undefined
+
+  if (observaciones.length > LIMITES.observacionesMedio) {
+    throw new Error(
+      `Las observaciones no pueden superar los ${LIMITES.observacionesMedio} caracteres.`,
+    )
+  }
+
+  return observaciones
+}
+
+export function validarDescripcion(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+
+  const descripcion = normalizarTexto(value)
+
+  if (!descripcion) return undefined
+
+  if (descripcion.length > LIMITES.descripcionMaxima) {
+    throw new Error(
+      `La descripción no puede superar los ${LIMITES.descripcionMaxima} caracteres.`,
+    )
+  }
+
+  return descripcion
+}
+
+export function validarEmail(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new Error('Introduce un correo electrónico válido.')
+  }
+
+  const email = value.trim().toLowerCase()
+
+  if (email.length > LIMITES.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('Introduce un correo electrónico válido.')
+  }
+
+  return email
+}
+
+export function validarUsuario(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new Error('Introduce un nombre de usuario válido.')
+  }
+
+  const usuario = normalizarTexto(value)
+
+  if (!usuario) {
+    throw new Error('El nombre de usuario es obligatorio.')
+  }
+
+  if (usuario.length > 60) {
+    throw new Error('El nombre de usuario no puede superar los 60 caracteres.')
+  }
+
+  if (tieneCaracteresDeControl(usuario)) {
+    throw new Error('El nombre de usuario contiene caracteres no permitidos.')
+  }
+
+  return usuario
+}
+
+export function validarPassword(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new Error('La contraseña es obligatoria.')
+  }
+
+  if (value.length < LIMITES.passwordMinima) {
+    throw new Error(`La contraseña debe tener al menos ${LIMITES.passwordMinima} caracteres.`)
+  }
+
+  if (value.length > LIMITES.passwordMaxima) {
+    throw new Error(`La contraseña no puede superar los ${LIMITES.passwordMaxima} caracteres.`)
+  }
+
+  return value
+}

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { LIMITES, validarCapacidad, validarDescripcion, validarNombre } from '@/lib/validation'
 import { actualizarCuarto, crearCuarto } from '@/services/infraestructura'
 
 const props = defineProps<{
@@ -38,6 +40,7 @@ const nombre = ref('')
 const capacidad = ref('4')
 const estadoId = ref('')
 const escaleraId = ref('')
+const descripcion = ref('')
 const error = ref('')
 const guardando = ref(false)
 
@@ -51,25 +54,27 @@ watch(open, (abierto) => {
   escaleraId.value = String(
     props.cuarto?.escaleraId ?? props.escaleraIdInicial ?? props.escaleras[0]?.id ?? '',
   )
+  descripcion.value = props.cuarto?.descripcion ?? ''
   error.value = ''
 })
 
 async function guardar() {
   error.value = ''
-  const nombreLimpio = nombre.value.trim()
-  const capacidadNumero = Number(capacidad.value)
+  let nombreLimpio = ''
+  let capacidadNumero = 0
+  let descripcionLimpia: string | undefined
+
+  try {
+    nombreLimpio = validarNombre(nombre.value, 'cuarto', LIMITES.nombreCuarto)
+    capacidadNumero = validarCapacidad(capacidad.value)
+    descripcionLimpia = validarDescripcion(descripcion.value)
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'Los datos no son válidos.'
+    return
+  }
+
   const idEstado = Number(estadoId.value)
   const idEscalera = Number(escaleraId.value)
-
-  if (nombreLimpio.length < 3) {
-    error.value = 'El nombre del cuarto debe tener al menos 3 caracteres.'
-    return
-  }
-
-  if (!Number.isInteger(capacidadNumero) || capacidadNumero <= 0) {
-    error.value = 'La capacidad debe ser un número entero mayor que cero.'
-    return
-  }
 
   if (props.cuarto && capacidadNumero < props.cuarto.ocupados) {
     error.value = `La capacidad no puede ser menor que las ${props.cuarto.ocupados} plazas ocupadas.`
@@ -93,11 +98,13 @@ async function guardar() {
           nombre: nombreLimpio,
           capacidadMaxima: capacidadNumero,
           estadoConstructivoId: idEstado,
+          descripcion: descripcionLimpia,
         })
       : await crearCuarto(idEscalera, {
           nombre: nombreLimpio,
           capacidadMaxima: capacidadNumero,
           estadoConstructivoId: idEstado,
+          descripcion: descripcionLimpia,
         })
 
     toast.success(esEdicion.value ? 'Cuarto actualizado' : 'Cuarto registrado', {
@@ -136,6 +143,8 @@ async function guardar() {
             placeholder="Ej. 1504"
             maxlength="40"
             autocomplete="off"
+            :aria-invalid="Boolean(error)"
+            :aria-describedby="error ? 'cuarto-error' : undefined"
           />
         </div>
 
@@ -149,13 +158,20 @@ async function guardar() {
               min="1"
               max="20"
               inputmode="numeric"
+              :aria-invalid="Boolean(error)"
+              :aria-describedby="error ? 'cuarto-error' : undefined"
             />
           </div>
 
           <div class="grid gap-2">
             <Label for="cuarto-estado">Estado constructivo</Label>
             <Select v-model="estadoId">
-              <SelectTrigger id="cuarto-estado" class="w-full">
+              <SelectTrigger
+                id="cuarto-estado"
+                class="w-full"
+                :aria-invalid="Boolean(error)"
+                :aria-describedby="error ? 'cuarto-error' : undefined"
+              >
                 <SelectValue placeholder="Seleccione un estado" />
               </SelectTrigger>
               <SelectContent>
@@ -172,9 +188,26 @@ async function guardar() {
         </div>
 
         <div class="grid gap-2">
+          <Label for="cuarto-descripcion">Descripción</Label>
+          <Textarea
+            id="cuarto-descripcion"
+            v-model="descripcion"
+            :maxlength="LIMITES.descripcionMaxima"
+            placeholder="Ej. Cuarto para estudiantes de bachillerato"
+            class="min-h-20"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="grid gap-2">
           <Label for="cuarto-escalera">Escalera</Label>
           <Select v-model="escaleraId" :disabled="esEdicion">
-            <SelectTrigger id="cuarto-escalera" class="w-full">
+            <SelectTrigger
+              id="cuarto-escalera"
+              class="w-full"
+              :aria-invalid="Boolean(error)"
+              :aria-describedby="error ? 'cuarto-error' : undefined"
+            >
               <SelectValue placeholder="Seleccione una escalera" />
             </SelectTrigger>
             <SelectContent>
@@ -189,7 +222,9 @@ async function guardar() {
           </Select>
         </div>
 
-        <p v-if="error" class="text-destructive text-sm">{{ error }}</p>
+        <p v-if="error" id="cuarto-error" role="alert" class="text-destructive text-sm">
+          {{ error }}
+        </p>
 
         <DialogFooter>
           <DialogClose as-child>

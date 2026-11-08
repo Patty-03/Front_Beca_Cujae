@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LIMITES, validarNombre } from '@/lib/validation'
 import { actualizarEscalera, crearEscalera } from '@/services/infraestructura'
 
 const props = defineProps<{
@@ -39,10 +40,12 @@ watch(open, (abierto) => {
 
 async function guardar() {
   error.value = ''
-  const nombreLimpio = nombre.value.trim()
+  let nombreLimpio = ''
 
-  if (nombreLimpio.length < 3) {
-    error.value = 'El nombre de la escalera debe tener al menos 3 caracteres.'
+  try {
+    nombreLimpio = validarNombre(nombre.value, 'escalera', LIMITES.nombreEscalera)
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'El nombre no es válido.'
     return
   }
 
@@ -88,10 +91,14 @@ async function guardar() {
             placeholder="Ej. Escalera 5 - Ala Norte"
             maxlength="80"
             autocomplete="off"
+            :aria-invalid="Boolean(error)"
+            :aria-describedby="error ? 'escalera-error' : undefined"
           />
         </div>
 
-        <p v-if="error" class="text-destructive text-sm">{{ error }}</p>
+        <p v-if="error" id="escalera-error" role="alert" class="text-destructive text-sm">
+          {{ error }}
+        </p>
 
         <DialogFooter>
           <DialogClose as-child>

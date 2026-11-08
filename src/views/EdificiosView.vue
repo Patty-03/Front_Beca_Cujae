@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EdificioResumen, EstadoConstructivo } from '@/types/infraestructura'
+import type { EdificioResumen, EscaleraResumen, EstadoConstructivo } from '@/types/infraestructura'
 import { computed, onMounted, ref } from 'vue'
 import {
   Building2Icon,
@@ -24,17 +24,32 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import ConfirmDialog from '@/components/infraestructura/ConfirmDialog.vue'
-import EdificioDialog from '@/components/infraestructura/EdificioDialog.vue'
+import CuartoDialog from '@/components/infraestructura/CuartoDialog.vue'
+import ConfiguracionCriteriosCard from '@/components/infraestructura/ConfiguracionCriteriosCard.vue'
+import { FileUpIcon } from '@lucide/vue'
 import EdificioTable from '@/components/infraestructura/EdificioTable.vue'
 import KpiCard from '@/components/infraestructura/KpiCard.vue'
+import { obtenerEdificio } from '@/services/infraestructura'
 import { formatNumber, formatPercent } from '@/lib/format'
 import {
   eliminarEdificio,
   obtenerEdificios,
   obtenerEstadosConstructivos,
 } from '@/services/infraestructura'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
+const puedeEscribir = computed(() => auth.can('infraestructura:write'))
 const edificios = ref<EdificioResumen[]>([])
 const estados = ref<EstadoConstructivo[]>([])
 const cargando = ref(true)
@@ -42,10 +57,72 @@ const error = ref('')
 const busqueda = ref('')
 const estadoFiltro = ref('todos')
 const dialogoAbierto = ref(false)
+const importarAbierto = ref(false)
 const edificioEditando = ref<EdificioResumen | null>(null)
 const edificioEliminando = ref<EdificioResumen | null>(null)
 const confirmacionAbierta = ref(false)
 const eliminando = ref(false)
+
+const cuartoAbierto = ref(false)
+const dialogoCuartoRealAbierto = ref(false)
+const escalerasDisponibles = ref<EscaleraResumen[]>([])
+const edificioSeleccionadoCuartoId = ref<string>('')
+const escaleraSeleccionadaCuartoId = ref<string>('')
+
+async function abrirNuevoCuarto() {
+  if (!puedeEscribir.value) return
+  const primerEdificio = edificios.value[0]
+  if (!primerEdificio) {
+    toast.error('No hay edificios registrados', {
+      description: 'Primero debe registrar al menos un edificio y una escalera.',
+    })
+    return
+  }
+  edificioSeleccionadoCuartoId.value = String(primerEdificio.id)
+  await cargarEscalerasParaCuarto(primerEdificio.id)
+  cuartoAbierto.value = true
+}
+
+async function cargarEscalerasParaCuarto(edificioId: number) {
+  try {
+    const detalle = await obtenerEdificio(edificioId)
+    escalerasDisponibles.value = detalle.escalerasDetalle
+    escaleraSeleccionadaCuartoId.value = detalle.escalerasDetalle[0]
+      ? String(detalle.escalerasDetalle[0].id)
+      : ''
+  } catch {
+    escalerasDisponibles.value = []
+    escaleraSeleccionadaCuartoId.value = ''
+  }
+}
+
+async function alCambiarEdificioCuarto(edificioIdStr: unknown) {
+  if (!edificioIdStr) return
+  const edificioId = Number(edificioIdStr)
+  if (!Number.isFinite(edificioId)) return
+  edificioSeleccionadoCuartoId.value = String(edificioIdStr)
+  await cargarEscalerasParaCuarto(edificioId)
+}
+
+function continuarACuartoDialog() {
+  if (!escaleraSeleccionadaCuartoId.value) {
+    toast.error('Debe seleccionar una escalera')
+    return
+  }
+  cuartoAbierto.value = false
+  dialogoCuartoRealAbierto.value = true
+}
+
+function alGuardarCuarto() {
+  dialogoCuartoRealAbierto.value = false
+  void cargar()
+}
+
+function alImportar() {
+  toast.success('Inventario actualizado')
+  importarAbierto.value = false
+  void cargar()
+}
 
 const filtrados = computed(() => {
   const texto = busqueda.value.trim().toLowerCase()
@@ -93,16 +170,20 @@ async function cargar() {
 }
 
 function abrirNuevo() {
+  if (!puedeEscribir.value) return
   edificioEditando.value = null
   dialogoAbierto.value = true
 }
 
 function abrirEditar(edificio: EdificioResumen) {
+  if (!puedeEscribir.value) return
   edificioEditando.value = edificio
   dialogoAbierto.value = true
 }
 
 function solicitarEliminar(edificio: EdificioResumen) {
+  if (!puedeEscribir.value) return
+
   if (edificio.escaleras > 0) {
     toast.error('No se puede eliminar el edificio', {
       description: 'Primero debe eliminar las escaleras registradas.',
@@ -155,10 +236,20 @@ onMounted(cargar)
           Consulta y administra el inventario de infraestructura de la residencia.
         </p>
       </div>
-      <Button @click="abrirNuevo">
-        <PlusIcon />
-        Nuevo edificio
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button v-if="puedeEscribir" variant="outline" @click="importarAbierto = true">
+          <FileUpIcon />
+          Importar Excel
+        </Button>
+        <Button variant="outline" @click="abrirNuevoCuarto">
+          <DoorOpenIcon />
+          Agregar cuarto
+        </Button>
+        <Button v-if="puedeEscribir" @click="abrirNuevo">
+          <PlusIcon />
+          Nuevo edificio
+        </Button>
+      </div>
     </div>
 
     <Alert v-if="error" variant="destructive">
@@ -202,6 +293,8 @@ onMounted(cargar)
         tono="amber"
       />
     </div>
+
+    <ConfiguracionCriteriosCard />
 
     <Card>
       <CardHeader>
@@ -280,7 +373,7 @@ onMounted(cargar)
             <Button v-if="hayFiltros" variant="outline" size="sm" @click="limpiarFiltros">
               Limpiar filtros
             </Button>
-            <Button v-else size="sm" @click="abrirNuevo">
+            <Button v-else-if="puedeEscribir" size="sm" @click="abrirNuevo">
               <PlusIcon />
               Nuevo edificio
             </Button>
@@ -294,6 +387,69 @@ onMounted(cargar)
       :estados="estados"
       :edificio="edificioEditando"
       @guardado="alGuardar"
+    />
+
+    <ImportarInfraestructuraDialog
+      v-model:open="importarAbierto"
+      :estados="estados"
+      @importado="alImportar"
+    />
+
+    <Dialog v-model:open="cuartoAbierto">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Seleccionar ubicación del cuarto</DialogTitle>
+          <DialogDescription>
+            Indica el edificio y la escalera donde se registrará el nuevo cuarto.
+          </DialogDescription>
+        </DialogHeader>
+        <div class="grid gap-4 py-2">
+          <div class="grid gap-2">
+            <Label>Edificio</Label>
+            <Select :model-value="edificioSeleccionadoCuartoId" @update:model-value="alCambiarEdificioCuarto">
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccione un edificio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="edificio in edificios" :key="edificio.id" :value="String(edificio.id)">
+                  {{ edificio.nombre }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div class="grid gap-2">
+            <Label>Escalera</Label>
+            <Select v-model="escaleraSeleccionadaCuartoId">
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccione una escalera" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="escalera in escalerasDisponibles"
+                  :key="escalera.id"
+                  :value="String(escalera.id)"
+                >
+                  {{ escalera.nombre }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" @click="continuarACuartoDialog">
+            Continuar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <CuartoDialog
+      v-model:open="dialogoCuartoRealAbierto"
+      :estados="estados"
+      :escaleras="escalerasDisponibles"
+      :escalera-id-inicial="Number(escaleraSeleccionadaCuartoId)"
+      @guardado="alGuardarCuarto"
     />
 
     <ConfirmDialog

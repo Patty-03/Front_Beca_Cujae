@@ -7,9 +7,11 @@ const props = withDefaults(
     ocupados: number
     capacidad: number
     compacto?: boolean
+    etiqueta?: string
   }>(),
   {
     compacto: false,
+    etiqueta: 'Ocupación',
   },
 )
 
@@ -20,15 +22,24 @@ const porcentaje = computed(() =>
 const porcentajeVisual = computed(() => Math.min(100, Math.max(0, porcentaje.value)))
 
 const color = computed(() => {
-  if (porcentaje.value >= 100) return '[&_[data-slot=progress-indicator]]:bg-red-500'
-  if (porcentaje.value >= 90) return '[&_[data-slot=progress-indicator]]:bg-amber-500'
-  return '[&_[data-slot=progress-indicator]]:bg-emerald-500'
+  if (porcentaje.value >= 100) return '[&_[data-slot=progress-indicator]]:bg-red-700'
+  if (porcentaje.value >= 90) return '[&_[data-slot=progress-indicator]]:bg-amber-700'
+  return '[&_[data-slot=progress-indicator]]:bg-emerald-700'
 })
+
+const etiquetaAccesible = computed(
+  () => `${props.etiqueta}: ${porcentaje.value}% (${props.ocupados} de ${props.capacidad} plazas)`,
+)
 </script>
 
 <template>
   <div class="space-y-1.5">
-    <Progress :model-value="porcentajeVisual" :class="color" />
+    <Progress
+      :model-value="porcentajeVisual"
+      :class="color"
+      :aria-label="etiquetaAccesible"
+      :aria-valuetext="etiquetaAccesible"
+    />
     <div
       v-if="!compacto"
       class="text-muted-foreground flex items-center justify-between gap-2 text-xs tabular-nums"
