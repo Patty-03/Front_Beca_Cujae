@@ -44,11 +44,7 @@ import FirmarDocumentoDialog from '@/components/estudiante-view/FirmarDocumentoD
 import { ETIQUETAS_TIPO_DOCUMENTO } from '@/types/estudiante-view'
 
 const auth = useAuthStore()
-const estudianteId = computed(() => {
-  if (!auth.user?.id) return null
-  if (auth.isDemo) return 1
-  return Number(auth.user.id)
-})
+const estudianteId = computed(() => auth.user?.estudianteId ?? null)
 
 const detalle = ref<Estudiante | null>(null)
 const cargando = ref(false)
@@ -80,11 +76,17 @@ const totalDeberesPendientes = computed(() =>
 )
 
 async function cargarEstudiante() {
-  if (!estudianteId.value) return
+  const id = estudianteId.value
+  if (id == null) {
+    detalle.value = null
+    error.value = 'Su cuenta no está asociada a un estudiante.'
+    return
+  }
+
   cargando.value = true
   error.value = ''
   try {
-    detalle.value = await obtenerEstudiante(estudianteId.value)
+    detalle.value = await obtenerEstudiante(id)
   } catch (caught) {
     error.value =
       caught instanceof Error ? caught.message : 'No se pudo cargar la información del estudiante.'

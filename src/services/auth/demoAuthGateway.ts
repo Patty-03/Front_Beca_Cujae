@@ -32,6 +32,7 @@ export class DemoAuthGateway implements AuthGateway {
         email,
         roles: [DEMO_ROLE],
         permissions: [...PERMISOS_POR_ROL[DEMO_ROLE]],
+        estudianteId: DEMO_ROLE === 'estudiante' ? 1 : null,
       },
       expiresAt: null,
     }

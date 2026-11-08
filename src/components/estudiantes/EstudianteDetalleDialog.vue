@@ -40,21 +40,33 @@ const open = defineModel<boolean>('open', { default: false })
 const detalle = ref<Estudiante | null>(null)
 const cargando = ref(false)
 const error = ref('')
+let solicitudActual = 0
 
-watch(open, async (abierto) => {
-  if (!abierto || !props.estudianteId) return
+watch([open, () => props.estudianteId], async ([abierto, estudianteId]) => {
+  if (!abierto) return
 
+  const solicitud = ++solicitudActual
   detalle.value = null
   error.value = ''
+
+  if (!estudianteId) {
+    cargando.value = false
+    error.value = 'No se seleccionó un estudiante válido.'
+    return
+  }
+
   cargando.value = true
 
   try {
-    detalle.value = await obtenerEstudiante(props.estudianteId)
+    const resultado = await obtenerEstudiante(estudianteId)
+    if (solicitud === solicitudActual) detalle.value = resultado
   } catch (caught) {
-    error.value =
-      caught instanceof Error ? caught.message : 'No se pudo cargar la ficha del estudiante.'
+    if (solicitud === solicitudActual) {
+      error.value =
+        caught instanceof Error ? caught.message : 'No se pudo cargar la ficha del estudiante.'
+    }
   } finally {
-    cargando.value = false
+    if (solicitud === solicitudActual) cargando.value = false
   }
 })
 

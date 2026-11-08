@@ -17,6 +17,7 @@ export interface SessionUser {
   email: string
   roles: Role[]
   permissions: Permission[]
+  estudianteId?: number | null
 }
 
 export interface Session {

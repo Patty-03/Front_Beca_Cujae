@@ -41,7 +41,7 @@ import {
 } from '@/lib/estudiantes'
 import { formatNumber } from '@/lib/format'
 import { obtenerEdificios } from '@/services/infraestructura'
-import { obtenerEstudiantes } from '@/services/estudiantes'
+import { eliminarEstudiante, obtenerEstudiantes } from '@/services/estudiantes'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -68,15 +68,23 @@ const estudianteEliminando = ref<EstudianteResumen | null>(null)
 const eliminando = ref(false)
 
 const carrerasDisponibles = computed(() =>
-  [...new Set(estudiantes.value.map((estudiante) => estudiante.carrera))].sort((a, b) =>
-    a.localeCompare(b, 'es'),
-  ),
+  [
+    ...new Set(
+      estudiantes.value
+        .map((estudiante) => estudiante.carrera.trim())
+        .filter((carrera) => carrera !== ''),
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'es')),
 )
 
 const provinciasDisponibles = computed(() =>
-  [...new Set(estudiantes.value.map((estudiante) => estudiante.provincia))].sort((a, b) =>
-    a.localeCompare(b, 'es'),
-  ),
+  [
+    ...new Set(
+      estudiantes.value
+        .map((estudiante) => estudiante.provincia.trim())
+        .filter((provincia) => provincia !== ''),
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'es')),
 )
 
 const carnetsExistentes = computed(() => estudiantes.value.map((estudiante) => estudiante.carnet))
@@ -159,13 +167,13 @@ function solicitarEliminar(estudiante: EstudianteResumen) {
 }
 
 async function confirmarEliminacion() {
-  if (!estudianteEliminando.value) return
+  const estudiante = estudianteEliminando.value
+  if (!estudiante) return
   eliminando.value = true
   try {
-    // Simulamos eliminación o llamada si estuviera implementada en el repositorio
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await eliminarEstudiante(estudiante.id)
     toast.success('Estudiante eliminado', {
-      description: estudianteEliminando.value.nombre,
+      description: estudiante.nombre,
     })
     confirmacionAbierta.value = false
     estudianteEliminando.value = null
@@ -417,7 +425,7 @@ onMounted(cargar)
     <ConfirmDialog
       v-model:open="confirmacionAbierta"
       titulo="Eliminar estudiante"
-      :descripcion="`¿Estás seguro de que deseas eliminar al estudiante ${estudianteEliminando?.nombre}? Esta acción no se puede deshacer.`"
+      :descripcion="`¿Estás seguro de que deseas dar de baja al estudiante ${estudianteEliminando?.nombre}? Dejará de aparecer como activo.`"
       :cargando="eliminando"
       @confirmar="confirmarEliminacion"
     />

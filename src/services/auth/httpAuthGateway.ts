@@ -94,6 +94,7 @@ async function leerSesionDesdeToken(): Promise<Session> {
       email: '',
       roles,
       permissions: permisos,
+      estudianteId: data.estudiante_id ?? null,
     },
     expiresAt,
   }

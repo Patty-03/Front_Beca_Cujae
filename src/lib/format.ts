@@ -13,14 +13,31 @@ export function formatPercent(value: number, fractionDigits = 0): string {
   }).format(value)} %`
 }
 
-export function formatDate(value: string): string {
-  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(
-        Number(value.slice(0, 4)),
-        Number(value.slice(5, 7)) - 1,
-        Number(value.slice(8, 10)),
-      )
-    : new Date(value)
+function parseFecha(value: string | null | undefined): Date | null {
+  if (!value || value.trim() === '') return null
+
+  const texto = value.trim()
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    const anio = Number(texto.slice(0, 4))
+    const mes = Number(texto.slice(5, 7)) - 1
+    const dia = Number(texto.slice(8, 10))
+    const fecha = new Date(anio, mes, dia)
+    const valida =
+      fecha.getFullYear() === anio && fecha.getMonth() === mes && fecha.getDate() === dia
+    return valida ? fecha : null
+  }
+
+  const fecha = new Date(texto)
+  return Number.isNaN(fecha.getTime()) ? null : fecha
+}
+
+export function formatDate(
+  value: string | null | undefined,
+  fallback = 'No registrada',
+): string {
+  const fecha = parseFecha(value)
+  if (!fecha) return fallback
 
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit',
@@ -29,13 +46,19 @@ export function formatDate(value: string): string {
   }).format(fecha)
 }
 
-export function formatDateTime(value: string): string {
+export function formatDateTime(
+  value: string | null | undefined,
+  fallback = 'No registrada',
+): string {
+  const fecha = parseFecha(value)
+  if (!fecha) return fallback
+
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value))
+  }).format(fecha)
 }
 
 export function getInitials(name: string): string {

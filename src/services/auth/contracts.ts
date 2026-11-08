@@ -32,6 +32,10 @@ export function esSesion(value: unknown): value is Session {
     return false
   }
 
+  if (user.estudianteId != null && typeof user.estudianteId !== 'number') {
+    return false
+  }
+
   return value.expiresAt === null || typeof value.expiresAt === 'string'
 }
 
