@@ -65,6 +65,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ['estudiantes:read'],
+            roles: ['estudiante'],
             title: 'Mi Perfil',
           },
         },

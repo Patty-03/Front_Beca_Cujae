@@ -40,7 +40,7 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
-import type { Permission } from '@/types/auth'
+import type { Permission, Role } from '@/types/auth'
 import { ETIQUETAS_ROL, esSoloEstudiante } from '@/lib/auth'
 import { getInitials } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
@@ -51,6 +51,7 @@ interface NavItem {
   icon: Component
   exact?: boolean
   permission?: Permission
+  roles?: Role[]
   children?: { label: string; to: string }[]
 }
 
@@ -116,7 +117,7 @@ const navigation: NavGroup[] = [
         to: '/estudiante',
         icon: UserIcon,
         exact: true,
-        permission: 'estudiantes:read',
+        roles: ['estudiante'],
       },
     ],
   },
@@ -137,7 +138,11 @@ const gruposVisibles = computed(() => {
   return navigation
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.permission || auth.can(item.permission)),
+      items: group.items.filter(
+        (item) =>
+          (!item.permission || auth.can(item.permission)) &&
+          (!item.roles || item.roles.some((rol: Role) => auth.hasRole(rol))),
+      ),
     }))
     .filter((group) => group.items.length > 0)
 })
