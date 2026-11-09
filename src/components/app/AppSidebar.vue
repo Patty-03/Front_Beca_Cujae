@@ -41,7 +41,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import type { Permission } from '@/types/auth'
-import { ETIQUETAS_ROL } from '@/lib/auth'
+import { ETIQUETAS_ROL, esSoloEstudiante } from '@/lib/auth'
 import { getInitials } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 
@@ -122,14 +122,25 @@ const navigation: NavGroup[] = [
   },
 ]
 
-const gruposVisibles = computed(() =>
-  navigation
+const esEstudiante = computed(() => esSoloEstudiante(auth.user?.roles ?? []))
+
+const gruposVisibles = computed(() => {
+  if (esEstudiante.value) {
+    return navigation
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.to === '/estudiante'),
+      }))
+      .filter((group) => group.items.length > 0)
+  }
+
+  return navigation
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => !item.permission || auth.can(item.permission)),
     }))
-    .filter((group) => group.items.length > 0),
-)
+    .filter((group) => group.items.length > 0)
+})
 
 const initials = computed(() => getInitials(auth.user?.name ?? 'Usuario'))
 const rolPrincipal = computed(() => auth.user?.roles[0])

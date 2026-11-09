@@ -8,9 +8,11 @@ import {
   ClipboardCheckIcon,
   ClipboardListIcon,
   GraduationCapIcon,
+  UserIcon,
 } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { esSoloEstudiante } from '@/lib/auth'
 import { useAuthStore } from '@/stores/auth'
 
 interface Modulo {
@@ -25,6 +27,7 @@ interface Modulo {
 const auth = useAuthStore()
 
 const nombreUsuario = computed(() => auth.user?.name ?? 'estudiante')
+const esEstudiante = computed(() => esSoloEstudiante(auth.user?.roles ?? []))
 
 const modulos: Modulo[] = [
   {
@@ -60,6 +63,17 @@ const modulos: Modulo[] = [
     etiqueta: 'En preparación',
   },
 ]
+
+const moduloMiPerfil: Modulo = {
+  nombre: 'Mi Perfil',
+  descripcion: 'Consulta tus datos personales, académicos y tu asignación de alojamiento.',
+  ruta: '/estudiante',
+  icono: UserIcon,
+  disponible: true,
+  etiqueta: 'Disponible',
+}
+
+const modulosVisibles = computed(() => (esEstudiante.value ? [moduloMiPerfil] : modulos))
 </script>
 
 <template>
@@ -91,13 +105,20 @@ const modulos: Modulo[] = [
       <div>
         <h2 class="text-brand-navy text-lg font-semibold tracking-tight">Accesos rápidos</h2>
         <p class="text-muted-foreground mt-1 text-sm">
-          Módulos disponibles en el sistema de gestión de la residencia.
+          {{
+            esEstudiante
+              ? 'Tu espacio personal en el sistema de gestión de la residencia.'
+              : 'Módulos disponibles en el sistema de gestión de la residencia.'
+          }}
         </p>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        class="grid gap-4"
+        :class="esEstudiante ? 'sm:max-w-sm' : 'sm:grid-cols-2 xl:grid-cols-4'"
+      >
         <RouterLink
-          v-for="modulo in modulos"
+          v-for="modulo in modulosVisibles"
           :key="modulo.ruta"
           :to="modulo.ruta"
           class="group block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"

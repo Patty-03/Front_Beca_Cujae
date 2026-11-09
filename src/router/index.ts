@@ -75,6 +75,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ['estudiantes:read'],
+            roles: ['operador', 'administrador'],
             title: 'Estudiantes',
             description:
               'AquÃ­ podrÃ¡s consultar la informaciÃ³n y el estado de los estudiantes residentes.',

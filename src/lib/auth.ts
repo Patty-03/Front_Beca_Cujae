@@ -21,7 +21,7 @@ export const ETIQUETAS_ROL: Record<Role, string> = {
 }
 
 export const PERMISOS_POR_ROL: Record<Role, Permission[]> = {
-  estudiante: ['infraestructura:read', 'deberes:read', 'estudiantes:read', 'evaluaciones:read'],
+  estudiante: ['estudiantes:read'],
   operador: [
     'infraestructura:read',
     'infraestructura:write',
@@ -34,6 +34,10 @@ export const PERMISOS_POR_ROL: Record<Role, Permission[]> = {
 
 export function esRol(value: unknown): value is Role {
   return typeof value === 'string' && ROLES.includes(value as Role)
+}
+
+export function esSoloEstudiante(roles: Role[]): boolean {
+  return roles.length === 1 && roles[0] === 'estudiante'
 }
 
 export function esPermiso(value: unknown): value is Permission {
