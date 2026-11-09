@@ -26,17 +26,9 @@ function permisosFront(permisosBack: string[]): Permission[] {
 }
 
 function rolesFront(permisos: Permission[]): Role[] {
-  const roles: Role[] = []
-  if (permisos.includes('usuarios:manage')) roles.push('administrador')
-  if (permisos.includes('infraestructura:write')) roles.push('operador')
-  if (
-    permisos.includes('estudiantes:read') ||
-    permisos.includes('estudiantes:write')
-  ) {
-    roles.push('estudiante')
-  }
-  if (roles.length === 0) roles.push('estudiante')
-  return roles
+  if (permisos.includes('usuarios:manage')) return ['administrador']
+  if (permisos.includes('infraestructura:write')) return ['operador']
+  return ['estudiante']
 }
 
 interface TokenRespuesta {
