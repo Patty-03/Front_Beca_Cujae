@@ -70,6 +70,28 @@ const router = createRouter({
           },
         },
         {
+          path: 'solicitar-medio',
+          name: 'solicitar-medio',
+          component: () => import('@/views/SolicitarMedioView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['solicitudes-medios:crear'],
+            roles: ['estudiante'],
+            title: 'Solicitar medio',
+          },
+        },
+        {
+          path: 'solicitudes-medios',
+          name: 'solicitudes-medios',
+          component: () => import('@/views/SolicitudesMediosView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['solicitudes-medios:read'],
+            roles: ['operador', 'administrador'],
+            title: 'Solicitudes de medios',
+          },
+        },
+        {
           path: 'estudiantes',
           name: 'estudiantes',
           component: () => import('@/views/EstudiantesView.vue'),

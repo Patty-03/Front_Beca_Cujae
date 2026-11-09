@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: ux-screenshot-build.spec.ts >> edificios: login, listado, modal nuevo, combo estado, errores y detalle
-- Location: e2e\ux-screenshot-build.spec.ts:5:1
+- Name: admin-auth.spec.ts >> Admin - Autenticación >> debe iniciar sesión como administrador y redirigir al inicio
+- Location: e2e\admin-auth.spec.ts:5:3
 
 # Error details
 

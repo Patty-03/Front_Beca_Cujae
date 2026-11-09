@@ -600,3 +600,93 @@ Call log:
 - **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
 Call log:
 [2m  - waiting for locator('h1:has-text("Gestión de edificios")') to be visible[22m
+
+## QA Edificios - 2026-11-09T21:28:01.573Z
+Pasaron 1/10 casos.
+
+- **CP-02 combo estados constructivos**: page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('dialog:has-text("Nuevo edificio")') to be visible[22m
+
+- **CP-03 registrar edificio**: sin botón
+- **CP-04 ver detalle edificio**: sin edificios
+- **CP-05 crear escalera**: sin edificios
+- **CP-06 crear cuarto**: sin edificios
+- **CP-07 editar edificio**: sin botón editar
+- **CP-08 eliminar edificio sin escaleras**: sin botón nuevo edificio
+- **CP-09 eliminar edificio con escaleras bloqueado**: sin botón nuevo edificio
+- **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[id="username"]') to be visible[22m
+
+## QA Edificios - 2026-11-09T21:29:29.713Z
+Pasaron 1/10 casos.
+
+- **CP-02 combo estados constructivos**: page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('dialog:has-text("Nuevo edificio")') to be visible[22m
+
+- **CP-03 registrar edificio**: sin botón
+- **CP-04 ver detalle edificio**: sin edificios
+- **CP-05 crear escalera**: sin edificios
+- **CP-06 crear cuarto**: sin edificios
+- **CP-07 editar edificio**: sin botón editar
+- **CP-08 eliminar edificio sin escaleras**: sin botón nuevo edificio
+- **CP-09 eliminar edificio con escaleras bloqueado**: sin botón nuevo edificio
+- **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[id="username"]') to be visible[22m
+
+## QA Edificios - 2026-11-09T21:30:36.334Z
+Pasaron 1/10 casos.
+
+- **CP-02 combo estados constructivos**: page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('dialog:has-text("Nuevo edificio")') to be visible[22m
+
+- **CP-03 registrar edificio**: sin botón
+- **CP-04 ver detalle edificio**: sin edificios
+- **CP-05 crear escalera**: sin edificios
+- **CP-06 crear cuarto**: sin edificios
+- **CP-07 editar edificio**: sin botón editar
+- **CP-08 eliminar edificio sin escaleras**: sin botón nuevo edificio
+- **CP-09 eliminar edificio con escaleras bloqueado**: sin botón nuevo edificio
+- **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[id="username"]') to be visible[22m
+
+## QA Edificios - 2026-11-09T21:31:47.721Z
+Pasaron 1/10 casos.
+
+- **CP-02 combo estados constructivos**: page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('dialog:has-text("Nuevo edificio")') to be visible[22m
+
+- **CP-03 registrar edificio**: sin botón
+- **CP-04 ver detalle edificio**: sin edificios
+- **CP-05 crear escalera**: sin edificios
+- **CP-06 crear cuarto**: sin edificios
+- **CP-07 editar edificio**: sin botón editar
+- **CP-08 eliminar edificio sin escaleras**: sin botón nuevo edificio
+- **CP-09 eliminar edificio con escaleras bloqueado**: sin botón nuevo edificio
+- **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[id="username"]') to be visible[22m
+
+## QA Edificios - 2026-11-09T21:33:04.146Z
+Pasaron 1/10 casos.
+
+- **CP-02 combo estados constructivos**: page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('dialog:has-text("Nuevo edificio")') to be visible[22m
+
+- **CP-03 registrar edificio**: sin botón
+- **CP-04 ver detalle edificio**: sin edificios
+- **CP-05 crear escalera**: sin edificios
+- **CP-06 crear cuarto**: sin edificios
+- **CP-07 editar edificio**: sin botón editar
+- **CP-08 eliminar edificio sin escaleras**: sin botón nuevo edificio
+- **CP-09 eliminar edificio con escaleras bloqueado**: sin botón nuevo edificio
+- **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[id="username"]') to be visible[22m

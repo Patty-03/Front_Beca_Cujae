@@ -10,6 +10,7 @@ import {
   GraduationCapIcon,
   HouseIcon,
   LogOutIcon,
+  PackageIcon,
   UserIcon,
   UsersIcon,
 } from '@lucide/vue'
@@ -119,6 +120,22 @@ const navigation: NavGroup[] = [
         exact: true,
         roles: ['estudiante'],
       },
+      {
+        label: 'Solicitar medio',
+        to: '/solicitar-medio',
+        icon: PackageIcon,
+        exact: true,
+        permission: 'solicitudes-medios:crear',
+        roles: ['estudiante'],
+      },
+      {
+        label: 'Solicitudes de medios',
+        to: '/solicitudes-medios',
+        icon: PackageIcon,
+        exact: true,
+        permission: 'solicitudes-medios:read',
+        roles: ['operador', 'administrador'],
+      },
     ],
   },
 ]
@@ -130,7 +147,9 @@ const gruposVisibles = computed(() => {
     return navigation
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => item.to === '/estudiante'),
+        items: group.items.filter((item) =>
+          ['/estudiante', '/solicitar-medio'].includes(item.to),
+        ),
       }))
       .filter((group) => group.items.length > 0)
   }

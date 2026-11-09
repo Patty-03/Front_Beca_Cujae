@@ -10,6 +10,9 @@ export type Permission =
   | 'usuarios:manage'
   | 'roles:manage'
   | 'documentos:manage'
+  | 'solicitudes-medios:crear'
+  | 'solicitudes-medios:read'
+  | 'solicitudes-medios:aprobar'
 
 export interface SessionUser {
   id: string

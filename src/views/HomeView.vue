@@ -8,6 +8,7 @@ import {
   ClipboardCheckIcon,
   ClipboardListIcon,
   GraduationCapIcon,
+  PackageIcon,
   UserIcon,
 } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
@@ -62,6 +63,14 @@ const modulos: Modulo[] = [
     disponible: false,
     etiqueta: 'En preparación',
   },
+  {
+    nombre: 'Solicitudes de medios',
+    descripcion: 'Aprueba o rechaza las solicitudes de medios propios de los estudiantes.',
+    ruta: '/solicitudes-medios',
+    icono: PackageIcon,
+    disponible: true,
+    etiqueta: 'Disponible',
+  },
 ]
 
 const moduloMiPerfil: Modulo = {
@@ -73,7 +82,18 @@ const moduloMiPerfil: Modulo = {
   etiqueta: 'Disponible',
 }
 
-const modulosVisibles = computed(() => (esEstudiante.value ? [moduloMiPerfil] : modulos))
+const moduloSolicitarMedio: Modulo = {
+  nombre: 'Solicitar medio',
+  descripcion: 'Pide un medio propio para tu cuarto, como un ventilador, una lámpara o una silla.',
+  ruta: '/solicitar-medio',
+  icono: PackageIcon,
+  disponible: true,
+  etiqueta: 'Disponible',
+}
+
+const modulosVisibles = computed(() =>
+  esEstudiante.value ? [moduloMiPerfil, moduloSolicitarMedio] : modulos,
+)
 </script>
 
 <template>

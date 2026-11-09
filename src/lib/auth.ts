@@ -12,6 +12,9 @@ export const PERMISSIONS: Permission[] = [
   'usuarios:manage',
   'roles:manage',
   'documentos:manage',
+  'solicitudes-medios:crear',
+  'solicitudes-medios:read',
+  'solicitudes-medios:aprobar',
 ]
 
 export const ETIQUETAS_ROL: Record<Role, string> = {
@@ -21,13 +24,15 @@ export const ETIQUETAS_ROL: Record<Role, string> = {
 }
 
 export const PERMISOS_POR_ROL: Record<Role, Permission[]> = {
-  estudiante: ['estudiantes:read'],
+  estudiante: ['estudiantes:read', 'solicitudes-medios:crear'],
   operador: [
     'infraestructura:read',
     'infraestructura:write',
     'deberes:read',
     'estudiantes:read',
     'evaluaciones:read',
+    'solicitudes-medios:read',
+    'solicitudes-medios:aprobar',
   ],
   administrador: [...PERMISSIONS],
 }

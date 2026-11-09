@@ -14,6 +14,9 @@ const PERMISO_BACK_TO_FRONT: Record<string, Permission[]> = {
   EST_GESTIONAR_MEDIOS: ['infraestructura:write'],
   SEG_RESTABLECER_CONTRASENA: ['usuarios:manage'],
   SEG_INICIAR_SESION: [],
+  SOLMED_CREAR: ['solicitudes-medios:crear'],
+  SOLMED_CONSULTAR: ['solicitudes-medios:read'],
+  SOLMED_APROBAR: ['solicitudes-medios:aprobar'],
 }
 
 function permisosFront(permisosBack: string[]): Permission[] {
