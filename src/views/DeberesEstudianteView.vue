@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
 import { obtenerEstudiante } from '@/services/estudiantes'
 import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/lib/format'
@@ -217,6 +218,18 @@ onMounted(cargarEstudiante)
       <AlertDescription>{{ error }}</AlertDescription>
     </Alert>
 
+    <Card v-if="cargando">
+      <CardHeader>
+        <CardTitle>Cargando deberes</CardTitle>
+        <CardDescription>Espere un momento mientras se cargan sus datos.</CardDescription>
+      </CardHeader>
+      <CardContent class="pt-4 space-y-3">
+        <div class="h-9 w-1/2 animate-pulse rounded-full bg-muted" />
+        <div class="h-9 w-3/4 animate-pulse rounded-full bg-muted" />
+        <div class="h-32 w-full animate-pulse rounded-lg bg-muted" />
+      </CardContent>
+    </Card>
+
     <Card v-if="!cargando && !detalle && !error">
       <CardHeader>
         <CardTitle>Sin datos del estudiante</CardTitle>
@@ -321,11 +334,11 @@ onMounted(cargarEstudiante)
       </CardContent>
     </Card>
 
-    <div v-if="detalle.deberes.length === 0" class="mt-4 text-center text-muted-foreground text-sm py-8">
+    <div v-if="!cargando && detalle && detalle.deberes.length === 0" class="mt-4 text-center text-muted-foreground text-sm py-8">
       No hay deberes registrados.
     </div>
 
-    <div v-if="detalle.deberes.length > 0" class="mt-4 grid gap-2 sm:grid-cols-3">
+    <div v-if="!cargando && detalle && detalle.deberes.length > 0" class="mt-4 grid gap-2 sm:grid-cols-3">
       <div
         v-for="deber in detalle.deberes.slice(0, 9)"
         :key="deber.id"
