@@ -150,6 +150,16 @@ const router = createRouter({
           },
         },
         {
+          path: 'avisos-estudiante',
+          name: 'avisos-estudiante',
+          component: () => import('@/views/AvisosEstudianteView.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['estudiante'],
+            title: 'Avisos',
+          },
+        },
+        {
           path: 'deberes-estudiante',
           name: 'deberes-estudiante',
           component: () => import('@/views/DeberesEstudianteView.vue'),

@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import {
-  ArrowRightIcon,
-  Building2Icon,
-  ClipboardCheckIcon,
-  ClipboardListIcon,
-  GraduationCapIcon,
-  PackageIcon,
-  UserIcon,
-} from '@lucide/vue'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { computed, onMounted, ref } from 'vue'
 import { esSoloEstudiante } from '@/lib/auth'
+import { Building2Icon } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
+import BannerAvisos from '@/components/app/BannerAvisos.vue'
+import AtajosGrid from '@/components/app/AtajosGrid.vue'
+import { obtenerAvisos } from '@/services/estudiante-view'
+import type { Aviso } from '@/types/estudiante-view'
 
 interface Modulo {
   nombre: string
@@ -43,7 +36,7 @@ const modulos: Modulo[] = [
     nombre: 'Deberes',
     descripcion: 'Gestiona las tareas y responsabilidades de los estudiantes de la residencia.',
     ruta: '/deberes',
-    icono: ClipboardListIcon,
+    icono: Building2Icon,
     disponible: false,
     etiqueta: 'En preparación',
   },
@@ -51,7 +44,7 @@ const modulos: Modulo[] = [
     nombre: 'Estudiantes',
     descripcion: 'Consulta la información y el estado de los estudiantes residentes.',
     ruta: '/estudiantes',
-    icono: GraduationCapIcon,
+    icono: Building2Icon,
     disponible: false,
     etiqueta: 'En preparación',
   },
@@ -59,7 +52,7 @@ const modulos: Modulo[] = [
     nombre: 'Evaluaciones',
     descripcion: 'Revisa y registra las evaluaciones realizadas a los estudiantes.',
     ruta: '/evaluaciones',
-    icono: ClipboardCheckIcon,
+    icono: Building2Icon,
     disponible: false,
     etiqueta: 'En preparación',
   },
@@ -67,7 +60,7 @@ const modulos: Modulo[] = [
     nombre: 'Solicitudes de medios',
     descripcion: 'Aprueba o rechaza las solicitudes de medios propios de los estudiantes.',
     ruta: '/solicitudes-medios',
-    icono: PackageIcon,
+    icono: Building2Icon,
     disponible: true,
     etiqueta: 'Disponible',
   },
@@ -77,7 +70,7 @@ const moduloMiPerfil: Modulo = {
   nombre: 'Mi Perfil',
   descripcion: 'Consulta tus datos personales, académicos y tu asignación de alojamiento.',
   ruta: '/estudiante',
-  icono: UserIcon,
+  icono: Building2Icon,
   disponible: true,
   etiqueta: 'Disponible',
 }
@@ -86,18 +79,36 @@ const moduloSolicitarMedio: Modulo = {
   nombre: 'Solicitar medio',
   descripcion: 'Pide un medio propio para tu cuarto, como un ventilador, una lámpara o una silla.',
   ruta: '/solicitar-medio',
-  icono: PackageIcon,
+  icono: Building2Icon,
   disponible: true,
   etiqueta: 'Disponible',
 }
 
 const modulosVisibles = computed(() =>
-  esEstudiante.value ? [moduloMiPerfil, moduloSolicitarMedio] : modulos,
+  esEstudiante.value ? [moduloMiPerfil, moduloSolicitarMedio] : modulos
 )
+
+const avisos = ref<Aviso[]>([])
+const avisosCargando = ref(false)
+
+async function cargarAvisos() {
+  avisosCargando.value = true
+  try {
+    avisos.value = await obtenerAvisos()
+  } catch {
+    avisos.value = []
+  } finally {
+    avisosCargando.value = false
+  }
+}
+
+onMounted(cargarAvisos)
 </script>
 
 <template>
   <div class="space-y-6">
+    <BannerAvisos :avisos="avisos" />
+
     <section
       class="from-brand-navy to-brand-primary relative overflow-hidden rounded-2xl bg-gradient-to-br p-6 text-white shadow-sm sm:p-8"
     >
@@ -121,65 +132,6 @@ const modulosVisibles = computed(() =>
       </div>
     </section>
 
-    <section class="space-y-4">
-      <div>
-        <h2 class="text-brand-navy text-lg font-semibold tracking-tight">Accesos rápidos</h2>
-        <p class="text-muted-foreground mt-1 text-sm">
-          {{
-            esEstudiante
-              ? 'Tu espacio personal en el sistema de gestión de la residencia.'
-              : 'Módulos disponibles en el sistema de gestión de la residencia.'
-          }}
-        </p>
-      </div>
-
-      <div
-        class="grid gap-4"
-        :class="esEstudiante ? 'sm:max-w-sm' : 'sm:grid-cols-2 xl:grid-cols-4'"
-      >
-        <RouterLink
-          v-for="modulo in modulosVisibles"
-          :key="modulo.ruta"
-          :to="modulo.ruta"
-          class="group block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-        >
-          <Card
-            class="h-full gap-0 py-0 shadow-xs transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md group-hover:ring-primary/40"
-          >
-            <CardContent class="flex h-full flex-col p-5">
-              <div class="flex items-start justify-between gap-3">
-                <div
-                  class="flex size-11 shrink-0 items-center justify-center rounded-xl"
-                  :class="
-                    modulo.disponible
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-muted text-muted-foreground'
-                  "
-                >
-                  <component :is="modulo.icono" class="size-5" />
-                </div>
-                <Badge :variant="modulo.disponible ? 'default' : 'outline'">
-                  {{ modulo.etiqueta }}
-                </Badge>
-              </div>
-
-              <div class="mt-4 flex-1 space-y-1.5">
-                <h3 class="text-brand-navy text-base font-semibold">{{ modulo.nombre }}</h3>
-                <p class="text-muted-foreground text-sm leading-relaxed">
-                  {{ modulo.descripcion }}
-                </p>
-              </div>
-
-              <div class="text-primary mt-5 flex items-center gap-1.5 text-sm font-medium">
-                <span>{{ modulo.disponible ? 'Abrir módulo' : 'Ver módulo' }}</span>
-                <ArrowRightIcon
-                  class="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </RouterLink>
-      </div>
-    </section>
+    <AtajosGrid :modulos="modulosVisibles" />
   </div>
 </template>
