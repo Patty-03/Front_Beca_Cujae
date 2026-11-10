@@ -13,6 +13,7 @@ export type Permission =
   | 'solicitudes-medios:crear'
   | 'solicitudes-medios:read'
   | 'solicitudes-medios:aprobar'
+  | 'ESTUD_CONSULTAR'
 
 export interface SessionUser {
   id: string
