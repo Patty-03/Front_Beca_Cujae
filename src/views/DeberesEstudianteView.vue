@@ -77,44 +77,67 @@ async function cargarEstudiante() {
   }
 }
 
-const mesInicio = computed(() => new Date(year.value, month.value, 1))
-const mesFin = computed(() => new Date(year.value, month.value + 1, 0))
+const mesesVisibles = computed(() => {
+  const inicioAnio = year.value
+  const inicioMes = month.value
+  const meses: Array<{
+    anio: number
+    mes: number
+    etiqueta: string
+    semanas: Array<{ fecha: string; numero: number; esDelMes: boolean }[]>
+  }> = []
 
-const diasDelMes = computed(() => {
-  const inicio = mesInicio.value
-  const fin = mesFin.value
-  const primerDiaSemana = (inicio.getDay() + 6) % 7
-  const totalDias = fin.getDate()
-  const dias: Array<{ fecha: string; numero: number; esDelMes: boolean }> = []
+  for (let i = 0; i < 3; i += 1) {
+    const mesTotal = inicioMes + i
+    const anioMes = inicioAnio + Math.floor(mesTotal / 12)
+    const mesIndex = mesTotal % 12
 
-  for (let i = 0; i < primerDiaSemana; i += 1) {
-    const fecha = new Date(inicio)
-    fecha.setDate(fecha.getDate() - (primerDiaSemana - i))
-    dias.push({ fecha: fecha.toISOString().slice(0, 10), numero: fecha.getDate(), esDelMes: false })
+    const inicio = new Date(anioMes, mesIndex, 1)
+    const fin = new Date(anioMes, mesIndex + 1, 0)
+    const primerDiaSemana = (inicio.getDay() + 6) % 7
+    const totalDias = fin.getDate()
+    const dias: Array<{ fecha: string; numero: number; esDelMes: boolean }> = []
+
+    for (let d = 0; d < primerDiaSemana; d += 1) {
+      const fecha = new Date(inicio)
+      fecha.setDate(fecha.getDate() - (primerDiaSemana - d))
+      dias.push({
+        fecha: fecha.toISOString().slice(0, 10),
+        numero: fecha.getDate(),
+        esDelMes: false,
+      })
+    }
+
+    for (let d = 1; d <= totalDias; d += 1) {
+      const fecha = new Date(anioMes, mesIndex, d)
+      dias.push({ fecha: fecha.toISOString().slice(0, 10), numero: d, esDelMes: true })
+    }
+
+    const resto = 7 - (dias.length % 7)
+    for (let d = 0; d < (resto === 7 ? 0 : resto); d += 1) {
+      const fecha = new Date(fin)
+      fecha.setDate(fecha.getDate() + (d + 1))
+      dias.push({
+        fecha: fecha.toISOString().slice(0, 10),
+        numero: fecha.getDate(),
+        esDelMes: false,
+      })
+    }
+
+    const semanas: Array<{ fecha: string; numero: number; esDelMes: boolean }[]> = []
+    for (let s = 0; s < dias.length; s += 7) {
+      semanas.push(dias.slice(s, s + 7))
+    }
+
+    meses.push({
+      anio: anioMes,
+      mes: mesIndex,
+      etiqueta: mesEtiquetas[mesIndex],
+      semanas,
+    })
   }
 
-  for (let i = 1; i <= totalDias; i += 1) {
-    const fecha = new Date(inicio)
-    fecha.setDate(i)
-    dias.push({ fecha: fecha.toISOString().slice(0, 10), numero: i, esDelMes: true })
-  }
-
-  const resto = 7 - (dias.length % 7)
-  for (let i = 0; i < (resto === 7 ? 0 : resto); i += 1) {
-    const fecha = new Date(fin)
-    fecha.setDate(fecha.getDate() + (i + 1))
-    dias.push({ fecha: fecha.toISOString().slice(0, 10), numero: fecha.getDate(), esDelMes: false })
-  }
-
-  return dias
-})
-
-const agruparSemanas = computed(() => {
-  const semanas: Array<typeof diasDelMes.value[number][]> = []
-  for (let i = 0; i < diasDelMes.value.length; i += 7) {
-    semanas.push(diasDelMes.value.slice(i, i + 7))
-  }
-  return semanas
+  return meses
 })
 
 const deberesPorFecha = computed(() => {
@@ -136,19 +159,21 @@ const resumen = computed(() => {
   }
 })
 
-function mesAnterior() {
-  month.value -= 1
+function trimestreAnterior() {
+  month.value -= 3
   if (month.value < 0) {
-    month.value = 11
-    year.value -= 1
+    const ajuste = Math.floor(Math.abs(month.value) / 12) + 1
+    month.value += ajuste * 12
+    year.value -= ajuste
   }
 }
 
-function mesSiguiente() {
-  month.value += 1
+function trimestreSiguiente() {
+  month.value += 3
   if (month.value > 11) {
-    month.value = 0
-    year.value += 1
+    const ajuste = Math.floor(month.value / 12)
+    month.value -= ajuste * 12
+    year.value += ajuste
   }
 }
 
@@ -169,18 +194,19 @@ onMounted(cargarEstudiante)
       <div class="space-y-1">
         <h1 class="text-2xl font-bold tracking-tight">Mis deberes</h1>
         <p class="text-muted-foreground text-sm">
-          Calendario mensual de responsabilidades asignadas.
+          Calendario de responsabilidades asignadas por trimestre.
         </p>
       </div>
 
       <div class="flex items-center gap-2">
-        <Button variant="outline" size="sm" @click="mesAnterior">
+        <Button variant="outline" size="sm" @click="trimestreAnterior">
           <ChevronLeftIcon class="size-4" />
         </Button>
         <h2 class="text-base font-semibold">
-          {{ mesEtiquetas[month.value] }} {{ year.value }}
+          {{ mesesVisibles[0]?.etiqueta }} - {{ mesesVisibles[2]?.etiqueta }}
+          {{ mesesVisibles[2]?.anio }}
         </h2>
-        <Button variant="outline" size="sm" @click="mesSiguiente">
+        <Button variant="outline" size="sm" @click="trimestreSiguiente">
           <ChevronRightIcon class="size-4" />
         </Button>
       </div>
@@ -206,7 +232,7 @@ onMounted(cargarEstudiante)
     <Card v-if="detalle && !cargando">
       <CardHeader>
         <CardTitle>{{ detalle.nombre }}</CardTitle>
-        <CardDescription>Resumen de deberes del mes</CardDescription>
+        <CardDescription>Resumen de deberes del trimestre</CardDescription>
       </CardHeader>
       <CardContent class="pt-2">
         <div class="grid gap-2 sm:grid-cols-4">
@@ -238,11 +264,11 @@ onMounted(cargarEstudiante)
       </CardContent>
     </Card>
 
-    <Card v-if="detalle && !cargando">
+    <Card v-if="detalle && !cargando" v-for="(mes, idx) in mesesVisibles" :key="idx">
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
           <CalendarIcon class="size-4" />
-          {{ mesEtiquetas[month.value] }} {{ year.value }}
+          {{ mes.etiqueta }} {{ mes.anio }}
         </CardTitle>
       </CardHeader>
       <CardContent class="pt-0">
@@ -261,7 +287,7 @@ onMounted(cargarEstudiante)
             </thead>
             <tbody>
               <tr
-                v-for="semana in agruparSemanas"
+                v-for="semana in mes.semanas"
                 :key="semana[0].fecha"
                 class="border-b border-border"
               >
@@ -292,40 +318,40 @@ onMounted(cargarEstudiante)
             </tbody>
           </table>
         </div>
-
-        <div v-if="detalle.deberes.length === 0" class="mt-4 text-center text-muted-foreground text-sm py-8">
-          No hay deberes registrados.
-        </div>
-
-        <div v-else class="mt-4 grid gap-2 sm:grid-cols-3">
-          <div
-            v-for="deber in detalle.deberes.slice(0, 9)"
-            :key="deber.id"
-            class="rounded-lg border p-3 text-sm"
-          >
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <span class="font-medium">{{ deber.tipo }}</span>
-              <Badge
-                :variant="
-                  deber.estado === 'incumplido'
-                    ? 'destructive'
-                    : deber.estado === 'cumplido'
-                    ? 'secondary'
-                    : 'outline'
-                "
-              >
-                {{ deber.estado }}
-              </Badge>
-            </div>
-            <p class="text-xs text-muted-foreground truncate">{{ deber.descripcion }}</p>
-            <p class="text-xs text-muted-foreground mt-1">
-              {{ formatDate(deber.fecha) }}
-              <span v-if="deber.turno"> · {{ deber.turno }}</span>
-              <span v-if="deber.cuartoNombre"> · {{ deber.cuartoNombre }}</span>
-            </p>
-          </div>
-        </div>
       </CardContent>
     </Card>
+
+    <div v-if="detalle.deberes.length === 0" class="mt-4 text-center text-muted-foreground text-sm py-8">
+      No hay deberes registrados.
+    </div>
+
+    <div v-if="detalle.deberes.length > 0" class="mt-4 grid gap-2 sm:grid-cols-3">
+      <div
+        v-for="deber in detalle.deberes.slice(0, 9)"
+        :key="deber.id"
+        class="rounded-lg border p-3 text-sm"
+      >
+        <div class="flex items-center justify-between gap-2 mb-1">
+          <span class="font-medium">{{ deber.tipo }}</span>
+          <Badge
+            :variant="
+              deber.estado === 'incumplido'
+                ? 'destructive'
+                : deber.estado === 'cumplido'
+                ? 'secondary'
+                : 'outline'
+            "
+          >
+            {{ deber.estado }}
+          </Badge>
+        </div>
+        <p class="text-xs text-muted-foreground truncate">{{ deber.descripcion }}</p>
+        <p class="text-xs text-muted-foreground mt-1">
+          {{ formatDate(deber.fecha) }}
+          <span v-if="deber.turno"> · {{ deber.turno }}</span>
+          <span v-if="deber.cuartoNombre"> · {{ deber.cuartoNombre }}</span>
+        </p>
+      </div>
+    </div>
   </div>
 </template>
