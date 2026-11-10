@@ -172,7 +172,7 @@ const gruposVisibles = computed(() => {
       .map((group) => ({
         ...group,
             items: group.items.filter((item) =>
-              ['/estudiante', '/solicitar-medio', '/avisos', '/evaluaciones', '/documentos-estudiante'].includes(item.to),
+              ['/estudiante', '/solicitar-medio', '/avisos', '/evaluaciones', '/documentos-estudiante', '/deberes-estudiante'].includes(item.to),
             ),
       }))
       .filter((group) => group.items.length > 0)
