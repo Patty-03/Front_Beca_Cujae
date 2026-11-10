@@ -13,6 +13,9 @@ import {
   PackageIcon,
   UserIcon,
   UsersIcon,
+  BellIcon,
+  FileTextIcon,
+  CalendarIcon,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -136,6 +139,27 @@ const navigation: NavGroup[] = [
         permission: 'solicitudes-medios:read',
         roles: ['operador', 'administrador'],
       },
+      {
+        label: 'Avisos',
+        to: '/avisos',
+        icon: BellIcon,
+        exact: true,
+        roles: ['estudiante'],
+      },
+      {
+        label: 'Documentos',
+        to: '/documentos-estudiante',
+        icon: FileTextIcon,
+        exact: true,
+        roles: ['estudiante'],
+      },
+      {
+        label: 'Mis deberes',
+        to: '/deberes-estudiante',
+        icon: CalendarIcon,
+        exact: true,
+        roles: ['estudiante'],
+      },
     ],
   },
 ]
@@ -147,9 +171,9 @@ const gruposVisibles = computed(() => {
     return navigation
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) =>
-          ['/estudiante', '/solicitar-medio'].includes(item.to),
-        ),
+            items: group.items.filter((item) =>
+              ['/estudiante', '/solicitar-medio', '/avisos', '/evaluaciones', '/documentos-estudiante'].includes(item.to),
+            ),
       }))
       .filter((group) => group.items.length > 0)
   }

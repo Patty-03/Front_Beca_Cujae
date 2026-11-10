@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { EdificioResumen } from '@/types/infraestructura'
 import type { EstudianteResumen, ResultadoImportacion } from '@/types/estudiante'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onErrorCaptured, onMounted, ref } from 'vue'
 import {
   BedDoubleIcon,
   CircleAlertIcon,
@@ -31,6 +31,7 @@ import AsignarCuartoDialog from '@/components/estudiantes/AsignarCuartoDialog.vu
 import EstudianteDetalleDialog from '@/components/estudiantes/EstudianteDetalleDialog.vue'
 import EstudianteTable from '@/components/estudiantes/EstudianteTable.vue'
 import ImportarEstudiantesDialog from '@/components/estudiantes/ImportarEstudiantesDialog.vue'
+import ExpedienteEstudianteView from '@/views/ExpedienteEstudianteView.vue'
 import KpiCard from '@/components/infraestructura/KpiCard.vue'
 import {
   ESTADOS_BECA,
@@ -62,6 +63,7 @@ const estadoFiltro = ref('todos')
 const importarAbierto = ref(false)
 const detalleAbierto = ref(false)
 const asignarAbierto = ref(false)
+const expedienteAbierto = ref(false)
 const confirmacionAbierta = ref(false)
 const estudianteSeleccionado = ref<EstudianteResumen | null>(null)
 const estudianteEliminando = ref<EstudianteResumen | null>(null)
@@ -71,7 +73,7 @@ const carrerasDisponibles = computed(() =>
   [
     ...new Set(
       estudiantes.value
-        .map((estudiante) => estudiante.carrera.trim())
+        .map((estudiante) => String(estudiante.carrera ?? '').trim())
         .filter((carrera) => carrera !== ''),
     ),
   ].sort((a, b) => a.localeCompare(b, 'es')),
@@ -81,7 +83,7 @@ const provinciasDisponibles = computed(() =>
   [
     ...new Set(
       estudiantes.value
-        .map((estudiante) => estudiante.provincia.trim())
+        .map((estudiante) => String(estudiante.provincia ?? '').trim())
         .filter((provincia) => provincia !== ''),
     ),
   ].sort((a, b) => a.localeCompare(b, 'es')),
@@ -206,6 +208,11 @@ function abrirAsignacion(estudiante: EstudianteResumen) {
   asignarAbierto.value = true
 }
 
+function abrirExpediente(estudiante: EstudianteResumen) {
+  estudianteSeleccionado.value = estudiante
+  expedienteAbierto.value = true
+}
+
 function alImportar(resultado: ResultadoImportacion) {
   toast.success('Listado actualizado', {
     description: `${resultado.resumen.validas} estudiantes nuevos disponibles.`,
@@ -220,6 +227,11 @@ function alAsignar() {
 }
 
 onMounted(cargar)
+
+onErrorCaptured((err, _, info) => {
+  console.error('[EstudiantesView] Error capturado en componente hijo:', err, 'en', info)
+  return false
+})
 </script>
 
 <template>
@@ -418,6 +430,7 @@ onMounted(cargar)
           @asignar="abrirAsignacion"
           @editar="abrirEditar"
           @eliminar="solicitarEliminar"
+          @ver-expediente="abrirExpediente"
         />
       </CardContent>
     </Card>
@@ -445,6 +458,11 @@ onMounted(cargar)
       v-model:open="asignarAbierto"
       :estudiante="estudianteSeleccionado"
       @asignado="alAsignar"
+    />
+
+    <ExpedienteEstudianteView
+      v-model:open="expedienteAbierto"
+      :estudiante-id="estudianteSeleccionado?.id"
     />
   </div>
 </template>

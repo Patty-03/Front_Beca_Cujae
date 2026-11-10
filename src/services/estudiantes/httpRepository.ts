@@ -149,9 +149,17 @@ async function cargarCatalogos(): Promise<Catalogos> {
 
   try {
     return await catalogoCache
-  } catch (caught) {
+  } catch {
     catalogoCache = null
-    throw caught
+    return {
+      sexos: [],
+      paises: [],
+      provincias: [],
+      municipios: [],
+      facultades: [],
+      especialidades: [],
+      militancias: [],
+    }
   }
 }
 

@@ -71,8 +71,9 @@ export const ETIQUETAS_ESTADO_DEBER: Record<EstadoDeber, string> = {
   incumplido: 'Incumplido',
 }
 
-export function normalizarClave(value: string): string {
-  return value
+export function normalizarClave(value: string | null | undefined): string {
+  if (value == null) return ''
+  return String(value)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()

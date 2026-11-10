@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { EstadoBeca, EstudianteResumen } from '@/types/estudiante'
 import { computed } from 'vue'
-import { BedDoubleIcon, ClipboardListIcon, EyeIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
+import { BedDoubleIcon, ClipboardListIcon, EyeIcon, PencilIcon, Trash2Icon, ViewIcon } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ const emit = defineEmits<{
   asignar: [estudiante: EstudianteResumen]
   editar: [estudiante: EstudianteResumen]
   eliminar: [estudiante: EstudianteResumen]
+  'ver-expediente': [estudiante: EstudianteResumen]
 }>()
 
 function varianteEstado(estado: EstadoBeca): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -149,12 +150,21 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
                  >
                    <BedDoubleIcon />
                    {{ estudiante.asignacion ? 'Cambiar' : 'Asignar' }}
-                 </Button>
-               </div>
-             </TableCell>
-          </TableRow>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    :aria-label="`Ver expediente de ${estudiante.nombre}`"
+                    @click="emit('ver-expediente', estudiante)"
+                  >
+                    <ViewIcon />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
         </TableBody>
       </Table>
+    </div>
     </div>
 
     <div class="grid gap-3 lg:hidden">
@@ -231,5 +241,4 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
         </CardContent>
       </Card>
     </div>
-  </div>
 </template>

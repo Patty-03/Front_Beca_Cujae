@@ -122,10 +122,41 @@ const router = createRouter({
           component: () => import('@/views/ModuloPlaceholderView.vue'),
           meta: {
             requiresAuth: true,
-            permissions: ['evaluaciones:read'],
+            roles: ['estudiante', 'operador', 'administrador'],
             title: 'Evaluaciones',
             description:
               'AquÃ­ podrÃ¡s revisar y registrar las evaluaciones realizadas a los estudiantes.',
+          },
+        },
+        {
+          path: 'avisos',
+          name: 'avisos',
+          component: () => import('@/views/AvisosView.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['estudiante'],
+            title: 'Avisos',
+          },
+        },
+        {
+          path: 'documentos-estudiante',
+          name: 'documentos-estudiante',
+          component: () => import('@/views/ModuloPlaceholderView.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['estudiante'],
+            title: 'Documentos',
+            description: 'Tus documentos personales y de alojamiento.',
+          },
+        },
+        {
+          path: 'deberes-estudiante',
+          name: 'deberes-estudiante',
+          component: () => import('@/views/DeberesEstudianteView.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['estudiante'],
+            title: 'Mis deberes',
           },
         },
         {
