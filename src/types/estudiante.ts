@@ -141,3 +141,67 @@ export interface AsignarCuartoInput {
   llaveEntregada?: boolean
   llaveTaquillaEntregada?: boolean
 }
+
+export interface AsignarCuartosMasivosInput {
+  estudianteId: number
+  cuartoId: number
+  desde?: string
+  taquilla?: string
+  llaveEntregada?: boolean
+  llaveTaquillaEntregada?: boolean
+}
+
+export interface AsignarCuartosMasivosResultado {
+  exitosos: number
+  fallidos: number
+  detalles: Array<{
+    estudianteId: number
+    cuartoId: number
+    exitoso: boolean
+    error?: string
+  }>
+}
+
+export interface AtributoDisponible {
+  id: number
+  nombre: string
+  tipoDatoId: number
+  tipoDatoNombre: string
+  almacenado: boolean
+  activo: boolean
+  valoresPermitidos: Array<{ id: number; valor: string }>
+}
+
+export interface OperadorDisponible {
+  id: number
+  simbolo: string
+  nombre: string
+  soloOrdenables: boolean
+}
+
+export interface CondicionRegla {
+  atributoDefId: number
+  operadorId: number
+  valorTexto?: string
+  valorEntero?: number
+  valorFecha?: string
+  valorBool?: boolean
+  valorPermitidoId?: number
+}
+
+export interface PrioridadRegla {
+  atributoDefId: number
+  tipo: 'ORDEN' | 'AGRUPAMIENTO' | 'CONSERVAR'
+  orden: number
+  sentido?: 'ASC' | 'DESC'
+  nivelAgrupamiento?: 'CUARTO' | 'ESCALERA' | 'EDIFICIO'
+}
+
+export interface ConjuntoReglaCrear {
+  nombre: string
+  ambito: 'ALOJAMIENTO' | 'DEBER'
+  desde: string
+  hasta: string
+  condiciones: CondicionRegla[]
+  prioridades: PrioridadRegla[]
+}

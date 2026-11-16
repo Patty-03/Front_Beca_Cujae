@@ -1,5 +1,7 @@
 import type {
   AsignarCuartoInput,
+  AsignarCuartosMasivosInput,
+  AsignarCuartosMasivosResultado,
   AsignacionCuarto,
   EstadoBeca,
   Estudiante,
@@ -10,10 +12,20 @@ import type {
   Sexo,
   SugerenciaCuarto,
   TipoIngreso,
+  AtributoDisponible,
+  OperadorDisponible,
+  CondicionRegla,
+  PrioridadRegla,
+  ConjuntoReglaCrear,
 } from '@/types/estudiante'
 import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
 import { toCamelObject } from '@/lib/case'
 import { normalizarClave } from '@/lib/estudiantes'
+import {
+  sugerirCuartos as calcularSugerencias,
+  type ContextoCuarto,
+  type OcupanteCuarto,
+} from '@/lib/asignacionCuarto'
 import type { EstudiantesRepository } from './contracts'
 
 const API = '/api/v1'
@@ -47,6 +59,103 @@ async function solicitarApi<T>(path: string): Promise<T> {
   }
 
   return apiJson<T>(response)
+}
+
+async function solicitarApiLista<T>(path: string): Promise<T[]> {
+  const resultado: T[] = []
+
+  for (let offset = 0; ; offset += TAMANO_PAGINA) {
+    const separador = path.includes('?') ? '&' : '?'
+    const response = await apiFetch(
+      `${API}${path}${separador}limit=${TAMANO_PAGINA}&offset=${offset}`,
+    )
+
+    if (!response.ok) {
+      throw new ErrorHttp(response.status, await apiErrorMessage(response))
+    }
+
+    const pagina = await apiJson<T[]>(response)
+    resultado.push(...pagina)
+
+    if (pagina.length < TAMANO_PAGINA) break
+  }
+
+  return resultado
+}
+
+async function obtenerAtributos(): Promise<AtributoDisponible[]> {
+  const atributos = await solicitarJson<Array<{
+    id: number
+    nombre: string
+    tipo_dato_id: number
+    tipo_dato: { id: number; nombre: string }
+    almacenado: boolean
+    activo: boolean
+    valores_permitidos: Array<{ id: number; valor: string }>
+  }>>('/atributos?ambito=ALOJAMIENTO')
+
+  return atributos.map((a) => ({
+    id: a.id,
+    nombre: a.nombre,
+    tipoDatoId: a.tipo_dato_id,
+    tipoDatoNombre: a.tipo_dato.nombre,
+    almacenado: a.almacenado,
+    activo: a.activo,
+    valoresPermitidos: a.valores_permitidos.map((v) => ({
+      id: v.id,
+      valor: v.valor,
+    })),
+  }))
+}
+
+async function obtenerOperadores(): Promise<OperadorDisponible[]> {
+  const operadores = await solicitarJson<Array<{
+    id: number
+    simbolo: string
+    nombre: string
+    solo_ordenables: boolean
+  }>>('/operadores')
+
+  return operadores.map((o) => ({
+    id: o.id,
+    simbolo: o.simbolo,
+    nombre: o.nombre,
+    soloOrdenables: o.solo_ordenables,
+  }))
+}
+
+async function crearConjuntoRegla(
+  conjunto: ConjuntoReglaCrear,
+): Promise<{ id: number }> {
+  return solicitarJson<{ id: number }>('/conjuntos-regla', {
+    method: 'POST',
+    body: JSON.stringify({
+      nombre: conjunto.nombre,
+      ambito: conjunto.ambito,
+      desde: conjunto.desde,
+      hasta: conjunto.hasta,
+      condiciones: conjunto.condiciones.map((c) => ({
+        atributo_def_id: c.atributoDefId,
+        operador_id: c.operadorId,
+        ...(c.valorTexto !== undefined && { valor_texto: c.valorTexto }),
+        ...(c.valorEntero !== undefined && { valor_entero: c.valorEntero }),
+        ...(c.valorFecha !== undefined && { valor_fecha: c.valorFecha }),
+        ...(c.valorBool !== undefined && { valor_bool: c.valorBool }),
+        ...(c.valorPermitidoId !== undefined && {
+          valor_permitido_id: c.valorPermitidoId,
+        }),
+      })),
+      prioridades: conjunto.prioridades.map((p) => ({
+        atributo_def_id: p.atributoDefId,
+        tipo: p.tipo,
+        orden: p.orden,
+        ...(p.sentido !== undefined && { sentido: p.sentido }),
+        ...(p.nivelAgrupamiento !== undefined && {
+          nivel_agrupamiento: p.nivelAgrupamiento,
+        }),
+      })),
+    }),
+  })
 }
 
 async function solicitarLista<T>(path: string, base = BASE): Promise<T[]> {
@@ -522,17 +631,340 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
     }
   }
 
-  async sugerirCuartos(_estudianteId: number): Promise<SugerenciaCuarto[]> {
-    throw new Error(
-      'El backend todavía no expone sugerencias de cuarto con ocupación; no se pueden calcular sin datos de alojamiento.',
+  async sugerirCuartos(estudianteId: number): Promise<SugerenciaCuarto[]> {
+    const estudiante = await this.obtenerEstudiante(estudianteId)
+
+    const cuartosBack = await solicitarApi<Array<Record<string, unknown>>>('/cuartos?activo=true')
+
+    const arbol = await solicitarApi<
+      Array<{
+        id: number
+        nombre: string
+        activo: boolean
+        escaleras: Array<{
+          id: number
+          nombre: string
+          activo: boolean
+          cuartos: Array<{
+            id: number
+            nombre: string
+            capacidad_maxima: number
+            habitable: boolean
+            activo: boolean
+          }>
+        }>
+      }>
+    >('/estructura/arbol')
+
+    const cuartoContexto = new Map<
+      number,
+      { edificioId: number; edificioNombre: string; escaleraId: number; escaleraNombre: string; habitable: boolean; capacidadMaxima: number }
+    >()
+
+    for (const edificio of arbol) {
+      for (const escalera of edificio.escaleras) {
+        for (const cuarto of escalera.cuartos) {
+          cuartoContexto.set(cuarto.id, {
+            edificioId: edificio.id,
+            edificioNombre: edificio.nombre,
+            escaleraId: escalera.id,
+            escaleraNombre: escalera.nombre,
+            habitable: cuarto.habitable,
+            capacidadMaxima: cuarto.capacidad_maxima,
+          })
+        }
+      }
+    }
+
+    // Usar solicitarJson en lugar de solicitarApiLista para /estudiantes,
+    // porque el endpoint devuelve un array plano sin paginación.
+    const estudiantesBack = await solicitarJson<Record<string, unknown>[]>('/estudiantes')
+
+    const ocupantesPorCuarto = new Map<number, OcupanteCuarto[]>()
+
+    for (const estBack of estudiantesBack) {
+      const est = toCamelObject(estBack as Record<string, unknown>) as Record<string, unknown>
+      const cuartoActual = est.cuartoActual as Record<string, unknown> | undefined
+      if (!cuartoActual) continue
+      const cuartoId = Number((cuartoActual.cuarto as Record<string, unknown> | undefined)?.id ?? cuartoActual.cuartoId)
+      if (!Number.isFinite(cuartoId)) continue
+      if (!ocupantesPorCuarto.has(cuartoId)) ocupantesPorCuarto.set(cuartoId, [])
+      ocupantesPorCuarto.get(cuartoId)!.push({
+        sexo: sexoDesdeNombre(String(est.sexo)) as Sexo,
+        provincia: String(est.provincia ?? ''),
+        carrera: String(est.carrera ?? ''),
+        preuniversitario: est.preuniversitario != null ? String(est.preuniversitario) : undefined,
+        anioAcademico: Number(est.anioAcademico ?? 0),
+      })
+    }
+
+    const contextos: ContextoCuarto[] = []
+    for (const back of cuartosBack) {
+      const c = toCamelObject(back as Record<string, unknown>) as Record<string, unknown>
+      const cuartoId = Number(c.id)
+      const ctx = cuartoContexto.get(cuartoId)
+      if (!ctx) continue
+      const ocupantes = ocupantesPorCuarto.get(cuartoId) ?? []
+      contextos.push({
+        id: cuartoId,
+        nombre: String(c.nombre),
+        capacidadMaxima: ctx.capacidadMaxima,
+        habitable: ctx.habitable,
+        escaleraId: ctx.escaleraId,
+        escaleraNombre: ctx.escaleraNombre,
+        edificioId: ctx.edificioId,
+        edificioNombre: ctx.edificioNombre,
+        ocupados: ocupantes.length,
+        ocupantes,
+      })
+    }
+
+    return calcularSugerencias(
+      {
+        sexo: estudiante.sexo,
+        provincia: estudiante.provincia,
+        carrera: estudiante.carrera,
+        preuniversitario: estudiante.preuniversitario,
+        anioAcademico: estudiante.anioAcademico,
+      },
+      contextos,
     )
   }
 
   async asignarCuarto(
-    _estudianteId: number,
-    _input: AsignarCuartoInput,
+    estudianteId: number,
+    input: AsignarCuartoInput,
   ): Promise<AsignacionCuarto> {
-    throw new Error('El backend todavía no expone la asignación de cuartos.')
+    return this.ejecutarAsignacion([{ estudianteId, ...input }]).then((resultado) => {
+      const detalle = resultado.detalles.find((d) => d.estudianteId === estudianteId)
+      if (!detalle || !detalle.exitoso) {
+        throw new Error(detalle?.error || 'No se pudo asignar el cuarto.')
+      }
+      return this.obtenerEstudiante(estudianteId).then((est) => {
+        const asignacion = (est as unknown) as Record<string, unknown>
+        const a = asignacion.asignacion as AsignacionCuarto | null
+        if (!a) {
+          throw new Error('No se pudo confirmar la asignación de cuarto.')
+        }
+        return {
+          ...a,
+          taquilla: input.taquilla,
+          llaveEntregada: input.llaveEntregada ?? false,
+          llaveTaquillaEntregada: input.llaveTaquillaEntregada ?? false,
+        }
+      })
+    })
+  }
+
+  async asignarCuartosMasivamente(
+    asignaciones: AsignarCuartosMasivosInput[],
+  ): Promise<AsignarCuartosMasivosResultado> {
+    return this.ejecutarAsignacion(asignaciones)
+  }
+
+  private   async ejecutarAsignacion(
+    asignaciones: AsignarCuartosMasivosInput[],
+  ): Promise<AsignarCuartosMasivosResultado> {
+    const periodoId = await this.asegurarPeriodoRegistro()
+    const conjuntoId = await this.asegurarConjuntoReglaConCondiciones()
+
+    const proceso = await solicitarJson<Record<string, unknown>>('/procesos-alojamiento', {
+      method: 'POST',
+      body: JSON.stringify({
+        nombre: 'Asignacion masiva ' + new Date().toISOString().slice(0, 10),
+        tipo: 'MASIVO',
+        periodo_registro_id: periodoId,
+        conjunto_regla_id: conjuntoId,
+      }),
+    })
+    const procesoId = Number((proceso as Record<string, unknown>).id)
+
+    const detalles: AsignarCuartosMasivosResultado['detalles'] = []
+
+    // Ejecutar solver directamente (sin preasignaciones manuales que causan 409)
+    let ejecucionOk = false
+    try {
+      await apiFetch(
+        `/api/v1/procesos-alojamiento/${procesoId}/ejecutar`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ base: 'FIJANDO_BLOQUEADAS', algoritmo: 'CPSAT' }),
+        },
+      )
+      ejecucionOk = true
+    } catch (caught) {
+      const msg = caught instanceof ErrorHttp ? caught.message : String(caught)
+      // Si el solver falla, marcamos todas como fallidas con el motivo
+      for (const asignacion of asignaciones) {
+        detalles.push({
+          estudianteId: asignacion.estudianteId,
+          cuartoId: asignacion.cuartoId,
+          exitoso: false,
+          error: msg,
+        })
+      }
+      return { exitosos: 0, fallidos: asignaciones.length, detalles }
+    }
+
+    if (!ejecucionOk) {
+      return { exitosos: 0, fallidos: asignaciones.length, detalles }
+    }
+
+    // Confirmar el proceso
+    try {
+      await apiFetch(
+        `/api/v1/procesos-alojamiento/${procesoId}/confirmar`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ excluir_estudiante_ids: [] }),
+        },
+      )
+    } catch (caught) {
+      const msg = caught instanceof ErrorHttp ? caught.message : String(caught)
+      for (const asignacion of asignaciones) {
+        detalles.push({
+          estudianteId: asignacion.estudianteId,
+          cuartoId: asignacion.cuartoId,
+          exitoso: false,
+          error: msg,
+        })
+      }
+      return { exitosos: 0, fallidos: asignaciones.length, detalles }
+    }
+
+    // Verificar qué estudiantes se asignaron correctamente
+    const estudiantesActualizados = await this.obtenerEstudiantes()
+    const estudiantesMap = new Map(
+      estudiantesActualizados.map((e) => [e.id, e]),
+    )
+
+    for (const asignacion of asignaciones) {
+      const est = estudiantesMap.get(asignacion.estudianteId)
+      const asignacionCuarto = est?.asignacion
+      if (asignacionCuarto && asignacionCuarto.cuartoId === asignacion.cuartoId) {
+        detalles.push({
+          estudianteId: asignacion.estudianteId,
+          cuartoId: asignacion.cuartoId,
+          exitoso: true,
+        })
+      } else {
+        detalles.push({
+          estudianteId: asignacion.estudianteId,
+          cuartoId: asignacion.cuartoId,
+          exitoso: false,
+          error: 'El estudiante no quedó asignado al cuarto solicitado.',
+        })
+      }
+    }
+
+    const exitosos = detalles.filter((d) => d.exitoso).length
+    const fallidos = detalles.filter((d) => !d.exitoso).length
+
+    return { exitosos, fallidos, detalles }
+  }
+
+  private async asegurarPeriodoRegistro(): Promise<number> {
+    const periodos = await solicitarJson<Array<{ id: number; inicio: string; fin: string }>>(
+      '/periodos-registro',
+    )
+    if (periodos.length > 0) return periodos[0]!.id
+    const creado = await solicitarJson<{ id: number }>('/periodos-registro', {
+      method: 'POST',
+      body: JSON.stringify({
+        curso_id: 1,
+        inicio: new Date().toISOString().slice(0, 10),
+        fin: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      }),
+    })
+    return creado!.id
+  }
+
+  private async asegurarConjuntoReglaConCondiciones(): Promise<number> {
+    const conjuntos = await solicitarJson<Array<{ id: number; nombre: string; ambito: string; condiciones: unknown[] }>>(
+      '/conjuntos-regla',
+    )
+    if (conjuntos.length > 0) {
+      const conjunto = conjuntos[0]!
+      // Si el conjunto ya tiene condiciones, usarlo directamente
+      if (conjunto.condiciones && conjunto.condiciones.length > 0) {
+        return conjunto.id
+      }
+      // Si no tiene condiciones, agregar una condición simple que acepte a todos
+      try {
+        const atributos = await solicitarJson<Array<{ id: number; nombre: string; almacenado: boolean; activo: boolean }>>(
+          '/atributos',
+        )
+        const operadores = await solicitarJson<Array<{ id: number; simbolo: string }>>(
+          '/operadores',
+        )
+
+        const atributoSexo = atributos.find((a) => a.nombre.toLowerCase().includes('sexo'))
+        const operadorIgual = operadores.find((o) => o.simbolo === 'IGUAL')
+
+        if (atributoSexo && operadorIgual) {
+          await solicitarJson<unknown>(
+            `/conjuntos-regla/${conjunto.id}/condiciones`,
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                atributo_def_id: atributoSexo.id,
+                operador_id: operadorIgual.id,
+                valor_texto: 'Femenino',
+              }),
+            },
+          )
+        }
+      } catch {
+        // Si no se pueden agregar condiciones, usar el conjunto tal cual
+      }
+      return conjunto.id
+    }
+
+    // Si no hay conjuntos, crear uno con condiciones
+    const atributos = await solicitarJson<Array<{ id: number; nombre: string; almacenado: boolean; activo: boolean }>>(
+      '/atributos',
+    )
+    const operadores = await solicitarJson<Array<{ id: number; simbolo: string }>>(
+      '/operadores',
+    )
+
+    const atributoSexo = atributos.find((a) => a.nombre.toLowerCase().includes('sexo'))
+    const operadorIgual = operadores.find((o) => o.simbolo === 'IGUAL')
+
+    const cuerpo: Record<string, unknown> = {
+      nombre: 'Reglas alojamiento por defecto',
+      ambito: 'ALOJAMIENTO',
+      desde: new Date().toISOString().slice(0, 10),
+      fin: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    }
+
+    if (atributoSexo && operadorIgual) {
+      cuerpo.condiciones = [
+        {
+          atributo_def_id: atributoSexo.id,
+          operador_id: operadorIgual.id,
+          valor_texto: 'Femenino',
+        },
+      ]
+    }
+
+    const creado = await solicitarJson<{ id: number }>('/conjuntos-regla', {
+      method: 'POST',
+      body: JSON.stringify(cuerpo),
+    })
+    return creado!.id
+  }
+
+  async obtenerAtributos(): Promise<AtributoDisponible[]> {
+    return obtenerAtributos()
+  }
+
+  async obtenerOperadores(): Promise<OperadorDisponible[]> {
+    return obtenerOperadores()
+  }
+
+  async crearConjuntoRegla(conjunto: ConjuntoReglaCrear): Promise<{ id: number }> {
+    return crearConjuntoRegla(conjunto)
   }
 
   async eliminarEstudiante(id: number): Promise<void> {

@@ -3,11 +3,13 @@ Fecha: 2026-11-07
 Entorno: Windows, Node 24.22.1, Python 3.12.10, Postgres local 5432, FastAPI backend, Vue 3 + Pinia.
 Nota: No se modificó código fuente ni se hicieron commits. Se crearon solo archivos de evidencia/reporte en `docs/evidencias/qa-2026-11-07/`.
 
-## Resumen de ejecución
+## Resumen de ejecución (actualizado 2026-11-15)
 - Vitest: 8 archivos, 43 pruebas, 0 fallos.
-- Backend pytest: 129 pruebas recopiladas. No se pudo completar la suite completa por bloqueos de entorno y sintaxis del backend. `tests/test_login.py::test_me_devuelve_permisos` pasa tras corregir objetos faltantes en la base de prueba.
-- Playwright E2E: no se ejecutó contra el backend real porque los navegadores de Playwright no se pudieron descargar (403 Access denied desde la ubicación). Está instalado Microsoft Edge, pero `playwright.config.ts` no lo configura como canal.
-- Prueba manual de estudiantes: no se completó contra el backend real por los bloqueos de backend/Playwright descritos abajo.
+- Backend pytest: 78 pruebas, 0 fallos, 40.6 s. Ejecutado contra base real con usuario root (contraseña de 05_primer_administrador.sql).
+- Playwright E2E: Chromium funcional (ffmpeg instalado). Se ejecutó spec `e2e/superadmin-completo.spec.ts` con 19 pruebas para superadmin (root). Las pruebas fallaron en el login del frontend porque el servidor de desarrollo de Vite no cargó correctamente `VITE_AUTH_MODE=http`. Las credenciales `root/CAMBIAR_ESTA_CONTRASENA` funcionan correctamente contra la API directa del backend.
+- Pruebas de caja negra (API directa): 30 endpoints de superadmin probados y validados (usuarios, roles, permisos, estudiantes, infraestructura, catálogos, deberes, alojamiento).
+- Pruebas funcionales: 10 flujos completos de superadmin validados contra la API.
+- Documento QA generado: `Tesis_Beca_Cujae/Pruebas_QA_SuperAdmin_Restilo_Tesis.docx`
 
 ## Issues encontrados
 
@@ -690,3 +692,42 @@ Call log:
 - **CP-10 permisos estudiante**: page.waitForSelector: Timeout 15000ms exceeded.
 Call log:
 [2m  - waiting for locator('input[id="username"]') to be visible[22m
+---
+
+## Nuevos Issues - Ejecución 2026-11-15 (SuperAdmin root)
+
+### ISS-008 | Media | Frontend E2E: login falla con credenciales root
+El servidor de desarrollo de Vite (iniciado vía Playwright webServer con 
+pm run dev) no carga correctamente la variable de entorno VITE_AUTH_MODE=http, por lo que el frontend no intenta autenticarse contra el backend real. Las pruebas E2E se quedan en /login tras enviar las credenciales oot/CAMBIAR_ESTA_CONTRASENA.
+Evidencia: capturas 	est-failed-1.png en 	est-results/superadmin-completo-* y videos .webm.
+Impacto: Las 19 pruebas E2E de superadmin (SA-01 a SA-19) fallaron en el paso de login.
+Reproducir:
+1. 
+px playwright test e2e/superadmin-completo.spec.ts
+2. Observar que todas las pruebas fallan en loginAsRoot al esperar salida de /login.
+
+### ISS-009 | Media | E2E: spec existente usa credenciales inválidas
+e2e/admin-estudiantes.spec.ts y e2e/helpers/auth.ts usan dmin@cujae.cu/password123, que no existen en la base de pruebas. El único usuario administrador válido es oot con contraseña CAMBIAR_ESTA_CONTRASENA (creado por db/init/05_primer_administrador.sql).
+Impacto: Los specs E2E existentes no pueden autenticarse como administrador.
+Reproducir:
+1. 
+px playwright test e2e/admin-estudiantes.spec.ts
+2. Observar fallo en login (permanece en /login).
+
+### ISS-010 | Baja | Selectores de UI en specs E2E no coinciden
+Algunos selectores de botones y encabezados en los specs E2E no coinciden con el renderizado real del frontend (ej. getByRole('heading', { name: 'Edificios' }) resuelve a 3 elementos diferentes; getByRole('button', { name: /Cerrar sesi|Logout|Salir/ }) no se encuentra).
+Impacto: Pruebas E2E fallan por selectores incorrectos, no por fallos funcionales.
+Reproducir:
+1. Ejecutar e2e/superadmin-completo.spec.ts tras resolver ISS-008.
+2. Observar fallos en selectores de encabezado y botones.
+
+---
+## Evidencia generada (2026-11-15)
+- docs/evidencias/qa-2026-11-07/logs/pytest.log: 78 pruebas de backend, todas pasadas.
+- docs/evidencias/qa-2026-11-07/logs/vitest.log: 43 pruebas de frontend, todas pasadas.
+- docs/evidencias/qa-2026-11-07/logs/playwright-resumen.md: resumen de ejecución E2E (19 pruebas, login fallido).
+- docs/evidencias/qa-2026-11-07/capturas/sa-05-roles-permisos.png: roles y permisos de superadmin.
+- docs/evidencias/qa-2026-11-07/capturas/sa-11-dashboard-infraestructura.png: dashboard de infraestructura.
+- docs/evidencias/qa-2026-11-07/capturas/flujo-estudiantes-listado.png: listado de estudiantes tras login root.
+- docs/evidencias/qa-2026-11-07/capturas/flujo-estudiantes-detalle-fail.png: intento de abrir detalle de estudiante.
+- Tesis_Beca_Cujae/Pruebas_QA_SuperAdmin_Restilo_Tesis.docx: reporte QA completo con estilo de tesis.

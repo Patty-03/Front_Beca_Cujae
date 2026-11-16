@@ -19,13 +19,21 @@ import {
 } from '@/lib/asignacionCuarto'
 import type {
   AsignarCuartoInput,
+  AsignarCuartosMasivosInput,
+  AsignarCuartosMasivosResultado,
   AsignacionCuarto,
+  AtributoDisponible,
+  CondicionRegla,
+  ConjuntoReglaCrear,
   DeberEstudiante,
   Estudiante,
   EstudianteImportado,
   EstudianteResumen,
+  OperadorDisponible,
+  PrioridadRegla,
   ResultadoImportacion,
   SugerenciaCuarto,
+  TipoIngreso,
 } from '@/types/estudiante'
 import type { EstudiantesRepository } from './contracts'
 
@@ -321,10 +329,158 @@ export const demoEstudiantesRepository: EstudiantesRepository = {
     return asignacion
   },
 
+  async asignarCuartosMasivamente(asignaciones: AsignarCuartosMasivosInput[]): Promise<AsignarCuartosMasivosResultado> {
+    await esperar(300)
+    const detalles: AsignarCuartosMasivosResultado['detalles'] = []
+    let exitosos = 0
+    let fallidos = 0
+
+    for (const asignacion of asignaciones) {
+      try {
+        const registro = registros.find((item) => item.id === asignacion.estudianteId)
+        if (!registro) {
+          throw new Error('Estudiante no encontrado.')
+        }
+        if (registro.estadoBeca === 'baja') {
+          throw new Error('No se puede asignar cuarto a un estudiante dado de baja.')
+        }
+
+        const cuarto = cuartos.find((item) => item.id === asignacion.cuartoId)
+        if (!cuarto) throw new Error('El cuarto seleccionado no existe.')
+
+        const estado = estadosConstructivos.find(
+          (item) => item.id === cuarto.estadoConstructivoId,
+        )
+        if (!estado?.habitable) throw new Error('El cuarto seleccionado no es habitable.')
+
+        const contexto = contextosDeCuartos().find((item) => item.id === cuarto.id)
+        if (!contexto) throw new Error('No se pudo calcular la ocupación del cuarto.')
+        if (contexto.ocupantes.some((ocupante) => ocupante.sexo !== registro.sexo)) {
+          throw new Error('El cuarto no es compatible con el sexo del estudiante.')
+        }
+
+        const alojamientoActual = alojamientoActivoDe(asignacion.estudianteId)
+        const yaEstaEnCuarto = alojamientoActual?.cuartoId === asignacion.cuartoId
+
+        if (!yaEstaEnCuarto && contexto.ocupados >= cuarto.capacidadMaxima) {
+          throw new Error('El cuarto seleccionado no tiene camas disponibles.')
+        }
+
+        if (alojamientoActual) {
+          alojamientoActual.cuartoId = asignacion.cuartoId
+          alojamientoActual.desde = asignacion.desde ?? hoy()
+          delete alojamientoActual.hasta
+        } else {
+          alojamientos.push({
+            id: siguienteAlojamientoId++,
+            cuartoId: asignacion.cuartoId,
+            estudianteId: asignacion.estudianteId,
+            desde: asignacion.desde ?? hoy(),
+          })
+        }
+
+        extrasAsignacion[asignacion.estudianteId] = {
+          taquilla: asignacion.taquilla,
+          llaveEntregada: asignacion.llaveEntregada ?? false,
+          llaveTaquillaEntregada: asignacion.llaveTaquillaEntregada ?? false,
+        }
+
+        detalles.push({
+          estudianteId: asignacion.estudianteId,
+          cuartoId: asignacion.cuartoId,
+          exitoso: true,
+        })
+        exitosos++
+      } catch (caught) {
+        fallidos++
+        detalles.push({
+          estudianteId: asignacion.estudianteId,
+          cuartoId: asignacion.cuartoId,
+          exitoso: false,
+          error: caught instanceof Error ? caught.message : String(caught),
+        })
+      }
+    }
+
+    return { exitosos, fallidos, detalles }
+  },
+
+  async obtenerAtributos(): Promise<AtributoDisponible[]> {
+    await esperar(100)
+    return [
+      {
+        id: 1,
+        nombre: 'Sexo',
+        tipoDatoId: 6,
+        tipoDatoNombre: 'referencia a entidad',
+        almacenado: false,
+        activo: true,
+        valoresPermitidos: [
+          { id: 1, valor: 'Femenino' },
+          { id: 2, valor: 'Masculino' },
+        ],
+      },
+      {
+        id: 2,
+        nombre: 'Año académico',
+        tipoDatoId: 2,
+        tipoDatoNombre: 'entero',
+        almacenado: false,
+        activo: true,
+        valoresPermitidos: [],
+      },
+      {
+        id: 7,
+        nombre: 'Provincia',
+        tipoDatoId: 6,
+        tipoDatoNombre: 'referencia a entidad',
+        almacenado: false,
+        activo: true,
+        valoresPermitidos: [
+          { id: 1, valor: 'La Habana' },
+          { id: 2, valor: 'Pinar del Río' },
+          { id: 3, valor: 'Villa Clara' },
+          { id: 4, valor: 'Camagüey' },
+          { id: 5, valor: 'Santiago de Cuba' },
+        ],
+      },
+      {
+        id: 9,
+        nombre: 'Especialidad',
+        tipoDatoId: 6,
+        tipoDatoNombre: 'referencia a entidad',
+        almacenado: false,
+        activo: true,
+        valoresPermitidos: [
+          { id: 1, valor: 'Ciencias Informáticas' },
+          { id: 2, valor: 'Estructuras' },
+          { id: 3, valor: 'Logística y Producción' },
+          { id: 4, valor: 'Sistemas Eléctricos' },
+        ],
+      },
+    ]
+  },
+
+  async obtenerOperadores(): Promise<OperadorDisponible[]> {
+    await esperar(100)
+    return [
+      { id: 1, simbolo: 'IGUAL', nombre: 'Igual a', soloOrdenables: false },
+      { id: 2, simbolo: 'DISTINTO', nombre: 'Distinto de', soloOrdenables: false },
+      { id: 3, simbolo: 'MAYOR_IGUAL', nombre: 'Mayor o igual que', soloOrdenables: true },
+      { id: 4, simbolo: 'MENOR_IGUAL', nombre: 'Menor o igual que', soloOrdenables: true },
+    ]
+  },
+
+  async crearConjuntoRegla(conjunto: ConjuntoReglaCrear): Promise<{ id: number }> {
+    await esperar(200)
+    // Simular creación exitosa en el demo
+    return { id: 999 }
+  },
+
   async eliminarEstudiante(id) {
     await esperar(180)
     const indice = registros.findIndex((item) => item.id === id)
     if (indice === -1) throw new Error('Estudiante no encontrado.')
     registros.splice(indice, 1)
-  },
+  }
 }
