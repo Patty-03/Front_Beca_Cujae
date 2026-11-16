@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   LIMITES,
   normalizarParaComparar,
+  normalizarTexto,
   validarCapacidad,
+  validarCantidadMedio,
   validarEmail,
   validarNombre,
   validarPassword,
@@ -45,6 +47,29 @@ describe('validarEmail y validarPassword', () => {
   it('exige la longitud mínima de contraseña', () => {
     expect(() => validarPassword('1234567')).toThrow('8 caracteres')
     expect(validarPassword('12345678')).toBe('12345678')
+  })
+})
+
+describe('validarCantidadMedio', () => {
+  it('acepta el rango permitido 1-999', () => {
+    expect(validarCantidadMedio(1)).toBe(1)
+    expect(validarCantidadMedio(500)).toBe(500)
+    expect(validarCantidadMedio(LIMITES.cantidadMedioMaxima)).toBe(LIMITES.cantidadMedioMaxima)
+  })
+
+  it('rechaza decimales y valores fuera de rango', () => {
+    expect(() => validarCantidadMedio(0)).toThrow('entre 1 y 999')
+    expect(() => validarCantidadMedio(1000)).toThrow('entre 1 y 999')
+    expect(() => validarCantidadMedio(1.5)).toThrow('entero')
+    expect(() => validarCantidadMedio(-1)).toThrow('entre 1 y 999')
+  })
+})
+
+describe('normalizarTexto', () => {
+  it('elimina espacios sobrantes y normaliza', () => {
+    expect(normalizarTexto('  Hola   mundo  ')).toBe('Hola mundo')
+    expect(normalizarTexto('')).toBe('')
+    expect(normalizarTexto('   ')).toBe('')
   })
 })
 

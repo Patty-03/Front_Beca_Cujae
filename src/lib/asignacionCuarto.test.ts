@@ -125,4 +125,48 @@ describe('sugerirCuartos', () => {
     expect(resultado[0]?.cuartoId).toBe(8)
     expect(resultado[0]?.puntuacion).toBeGreaterThan(resultado[1]?.puntuacion ?? 0)
   })
+
+  it('suma puntuación por mismo año académico', () => {
+    const resultado = sugerirCuartos(estudiante, [
+      cuarto({
+        id: 1,
+        ocupados: 1,
+        ocupantes: [
+          {
+            sexo: 'F',
+            provincia: 'Otra',
+            carrera: 'Otra',
+            preuniversitario: 'Otro',
+            anioAcademico: 1,
+          },
+        ],
+      }),
+      cuarto({ id: 2, ocupados: 0 }),
+    ])
+
+    expect(resultado[0]?.puntuacion).toBeGreaterThan(resultado[1]?.puntuacion ?? 0)
+    expect(resultado[0]?.motivos).toContain('Mismo año académico')
+  })
+
+  it('suma puntuación por mismo preuniversitario', () => {
+    const resultado = sugerirCuartos(estudiante, [
+      cuarto({
+        id: 1,
+        ocupados: 1,
+        ocupantes: [
+          {
+            sexo: 'F',
+            provincia: 'Otra',
+            carrera: 'Otra',
+            preuniversitario: 'IPVCE Federico Engels',
+            anioAcademico: 2,
+          },
+        ],
+      }),
+      cuarto({ id: 2, ocupados: 0 }),
+    ])
+
+    expect(resultado[0]?.puntuacion).toBeGreaterThan(resultado[1]?.puntuacion ?? 0)
+    expect(resultado[0]?.motivos).toContain('Mismo preuniversitario')
+  })
 })

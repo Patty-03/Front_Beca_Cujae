@@ -157,4 +157,40 @@ describe('parsearFilasEstudiantes', () => {
     const sinTelefono = alias.filter((columna) => columna !== 'Teléfono')
     expect(() => parsearFilasEstudiantes([sinTelefono, fila()])).toThrow('Teléfono')
   })
+
+  it('acepta año académico entre 1 y 6', () => {
+    for (let anio = 1; anio <= 6; anio++) {
+      const resultado = parsearFilasEstudiantes(
+        [encabezados, fila({ anioAcademico: anio })],
+      )
+      expect(resultado.resumen.validas).toBe(1)
+      expect(resultado.filas[0]?.datos?.anioAcademico).toBe(anio)
+    }
+  })
+
+  it('rechaza año académico fuera de rango 1-6', () => {
+    const resultado = parsearFilasEstudiantes(
+      [encabezados, fila({ anioAcademico: 7 })],
+    )
+    expect(resultado.resumen.rechazadas).toBe(1)
+    expect(resultado.filas[0]?.datos).toBeNull()
+  })
+
+  it('rechaza fecha de nacimiento futura', () => {
+    const resultado = parsearFilasEstudiantes(
+      [encabezados, fila({ fechaNacimiento: '2030-01-01' })],
+    )
+    expect(resultado.resumen.rechazadas).toBe(1)
+    expect(resultado.filas[0]?.datos).toBeNull()
+  })
+
+  it('rechaza carnet duplicado', () => {
+    const resultado = parsearFilasEstudiantes(
+      [encabezados, fila({ carnet: 'CI-2026100' }), fila({ carnet: 'CI-2026100' })],
+      [],
+    )
+    expect(resultado.resumen.validas).toBe(1)
+    expect(resultado.resumen.omitidas).toBe(1)
+    expect(resultado.filas[1]?.omision).toContain('duplicado')
+  })
 })
