@@ -1,9 +1,7 @@
 import type {
-  AsignarCuartoInput,
   AsignarCuartosMasivosInput,
   AsignarCuartosMasivosResultado,
   AsignacionCuarto,
-  EstadoBeca,
   Estudiante,
   EstudianteImportado,
   EstudianteResumen,
@@ -17,6 +15,8 @@ import type {
   CondicionRegla,
   PrioridadRegla,
   ConjuntoReglaCrear,
+  AsignarCuartoInput,
+  EstadoBeca,
 } from '@/types/estudiante'
 import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
 import { toCamelObject } from '@/lib/case'
@@ -51,8 +51,8 @@ async function solicitarJson<T>(path: string, init?: RequestInit): Promise<T> {
   return apiJson<T>(response)
 }
 
-async function solicitarApi<T>(path: string): Promise<T> {
-  const response = await apiFetch(`${API}${path}`)
+async function solicitarApi<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await apiFetch(`${API}${path}`, init)
 
   if (!response.ok) {
     throw new ErrorHttp(response.status, await apiErrorMessage(response))
@@ -84,7 +84,7 @@ async function solicitarApiLista<T>(path: string): Promise<T[]> {
 }
 
 async function obtenerAtributos(): Promise<AtributoDisponible[]> {
-  const atributos = await solicitarJson<Array<{
+  const atributos = await solicitarApi<Array<{
     id: number
     nombre: string
     tipo_dato_id: number
@@ -92,7 +92,7 @@ async function obtenerAtributos(): Promise<AtributoDisponible[]> {
     almacenado: boolean
     activo: boolean
     valores_permitidos: Array<{ id: number; valor: string }>
-  }>>('/atributos?ambito=ALOJAMIENTO')
+  }>>('/estudiantes/atributos?ambito=ALOJAMIENTO')
 
   return atributos.map((a) => ({
     id: a.id,
@@ -109,12 +109,12 @@ async function obtenerAtributos(): Promise<AtributoDisponible[]> {
 }
 
 async function obtenerOperadores(): Promise<OperadorDisponible[]> {
-  const operadores = await solicitarJson<Array<{
+  const operadores = await solicitarApi<Array<{
     id: number
     simbolo: string
     nombre: string
     solo_ordenables: boolean
-  }>>('/operadores')
+  }>>('/estudiantes/operadores')
 
   return operadores.map((o) => ({
     id: o.id,
@@ -238,10 +238,10 @@ async function cargarCatalogos(): Promise<Catalogos> {
       await Promise.all([
         solicitarApi<SexoBack[]>('/sexos'),
         solicitarLista<PaisBack>('/paises', API),
-        solicitarApi<ProvinciaBack[]>('/provincias'),
-        solicitarLista<MunicipioBack>('/municipios', API),
+        solicitarApi<ProvinciaBack[]>('/provincias', API),
+        solicitarApi<MunicipioBack[]>('/municipios', API),
         solicitarApi<FacultadBack[]>('/facultades'),
-        solicitarLista<EspecialidadBack>('/especialidades', API),
+        solicitarApi<EspecialidadBack[]>('/especialidades', API),
         solicitarApi<MilitanciaBack[]>('/militancias'),
       ])
 
@@ -681,6 +681,7 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
     const estudiantesBack = await solicitarJson<Record<string, unknown>[]>('/estudiantes')
 
     const ocupantesPorCuarto = new Map<number, OcupanteCuarto[]>()
+    const ocupaciones: { [key: string]: number } = {}
 
     for (const estBack of estudiantesBack) {
       const est = toCamelObject(estBack as Record<string, unknown>) as Record<string, unknown>
@@ -762,7 +763,7 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
     return this.ejecutarAsignacion(asignaciones)
   }
 
-  private   async ejecutarAsignacion(
+  private async ejecutarAsignacion(
     asignaciones: AsignarCuartosMasivosInput[],
   ): Promise<AsignarCuartosMasivosResultado> {
     const periodoId = await this.asegurarPeriodoRegistro()
@@ -955,6 +956,17 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
     return creado!.id
   }
 
+  async eliminarEstudiante(id: number): Promise<void> {
+    const response = await apiFetch(`${BASE}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ activo: false }),
+    })
+
+    if (!response.ok) {
+      throw new ErrorHttp(response.status, await apiErrorMessage(response))
+    }
+  }
+
   async obtenerAtributos(): Promise<AtributoDisponible[]> {
     return obtenerAtributos()
   }
@@ -965,16 +977,5 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
 
   async crearConjuntoRegla(conjunto: ConjuntoReglaCrear): Promise<{ id: number }> {
     return crearConjuntoRegla(conjunto)
-  }
-
-  async eliminarEstudiante(id: number): Promise<void> {
-    const response = await apiFetch(`${BASE}/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ activo: false }),
-    })
-
-    if (!response.ok) {
-      throw new ErrorHttp(response.status, await apiErrorMessage(response))
-    }
   }
 }

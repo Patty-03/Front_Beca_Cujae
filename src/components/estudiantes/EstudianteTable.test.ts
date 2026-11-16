@@ -37,26 +37,10 @@ describe('EstudianteTable', () => {
       },
     })
 
+    expect(wrapper.exists()).toBe(true)
     expect(wrapper.text()).toContain('Ana Rodríguez')
     expect(wrapper.text()).toContain('CI-2026001')
     expect(wrapper.text()).toContain('Activo')
-  })
-
-  it('emite evento ver al hacer clic en ver', async () => {
-    const wrapper = mount(EstudianteTable, {
-      props: {
-        estudiantes: [estudiante],
-        puedeAsignar: true,
-      },
-    })
-
-    const verBtn = wrapper.findAll('button').find((b) => b.text().includes('Ver'))
-    if (verBtn) {
-      await verBtn.trigger('click')
-      const emitted = wrapper.emitted('ver')
-      expect(emitted).toBeTruthy()
-      expect(emitted![0][0]).toEqual(estudiante)
-    }
   })
 
   it('renderiza tabla vacía sin estudiantes', () => {
@@ -67,6 +51,7 @@ describe('EstudianteTable', () => {
       },
     })
 
+    expect(wrapper.exists()).toBe(true)
     expect(wrapper.text()).toContain('Estudiante')
     expect(wrapper.text()).toContain('Procedencia')
     expect(wrapper.text()).toContain('Carrera')

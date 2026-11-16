@@ -361,8 +361,8 @@ function obtenerValorTexto(condicion: CondicionRegla): string {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div class="grid gap-4">
-                <div class="col-span-1 lg:col-span-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div class="">
                   <label class="text-sm font-medium mb-1">Atributo</label>
                   <select
                     v-model="atributoSeleccionado"
@@ -374,7 +374,7 @@ function obtenerValorTexto(condicion: CondicionRegla): string {
                     </option>
                   </select>
                 </div>
-                <div class="col-span-1 lg:col-span-3">
+                <div class="">
                   <label class="text-sm font-medium mb-1">Operador</label>
                   <select
                     v-model="operadorSeleccionado"
@@ -386,7 +386,7 @@ function obtenerValorTexto(condicion: CondicionRegla): string {
                     </option>
                   </select>
                 </div>
-                <div class="col-span-1 lg:col-span-3">
+                <div class="">
                   <label class="text-sm font-medium mb-1">Valor</label>
                   <div v-if="atributoSeleccionado && operadorSeleccionado">
                     <div v-if="valorTextoEsValido(atributoSeleccionado, operadorSeleccionado)">
