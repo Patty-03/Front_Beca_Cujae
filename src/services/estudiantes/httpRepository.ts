@@ -92,7 +92,7 @@ async function obtenerAtributos(): Promise<AtributoDisponible[]> {
     almacenado: boolean
     activo: boolean
     valores_permitidos: Array<{ id: number; valor: string }>
-  }>>('/estudiantes/atributos?ambito=ALOJAMIENTO')
+  }>>('/atributos?ambito=ALOJAMIENTO')
 
   return atributos.map((a) => ({
     id: a.id,
@@ -114,7 +114,7 @@ async function obtenerOperadores(): Promise<OperadorDisponible[]> {
     simbolo: string
     nombre: string
     solo_ordenables: boolean
-  }>>('/estudiantes/operadores')
+  }>>('/operadores')
 
   return operadores.map((o) => ({
     id: o.id,

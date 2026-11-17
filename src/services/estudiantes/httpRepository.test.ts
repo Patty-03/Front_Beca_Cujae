@@ -213,7 +213,7 @@ describe('HttpEstudiantesRepository', () => {
       const resultado = await repo.obtenerAtributos()
 
       expect(mockApiFetch).toHaveBeenCalledWith(
-        '/api/v1/estudiantes/atributos?ambito=ALOJAMIENTO',
+        '/api/v1/atributos?ambito=ALOJAMIENTO',
         undefined,
       )
       expect(Array.isArray(resultado)).toBe(true)
@@ -235,7 +235,7 @@ describe('HttpEstudiantesRepository', () => {
       const resultado = await repo.obtenerOperadores()
 
       expect(mockApiFetch).toHaveBeenCalledWith(
-        '/api/v1/estudiantes/operadores',
+        '/api/v1/operadores',
         undefined,
       )
       expect(Array.isArray(resultado)).toBe(true)
