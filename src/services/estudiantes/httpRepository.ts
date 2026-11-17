@@ -769,7 +769,7 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
     const periodoId = await this.asegurarPeriodoRegistro()
     const conjuntoId = await this.asegurarConjuntoReglaConCondiciones()
 
-    const proceso = await solicitarJson<Record<string, unknown>>('/procesos-alojamiento', {
+    const proceso = await solicitarApi<Record<string, unknown>>('/procesos-alojamiento', {
       method: 'POST',
       body: JSON.stringify({
         nombre: 'Asignacion masiva ' + new Date().toISOString().slice(0, 10),
