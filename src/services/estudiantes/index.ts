@@ -37,6 +37,11 @@ export const asignarCuartosMasivamente = (asignaciones: AsignarCuartosMasivosInp
 
 export const eliminarEstudiante = (id: number) => repositorio.eliminarEstudiante(id)
 
+export const obtenerProcesosAlojamiento = () => repositorio.obtenerProcesosAlojamiento()
+export const obtenerProcesoAlojamiento = (id: number) => repositorio.obtenerProcesoAlojamiento(id)
+export const obtenerPreasignacionesProceso = (id: number) =>
+  repositorio.obtenerPreasignacionesProceso(id)
+
 export const obtenerAtributos = () => repositorio.obtenerAtributos()
 export const obtenerOperadores = () => repositorio.obtenerOperadores()
 export const crearConjuntoRegla = (conjunto: ConjuntoReglaCrear) =>

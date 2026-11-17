@@ -17,6 +17,9 @@ import type {
   ConjuntoReglaCrear,
   AsignarCuartoInput,
   EstadoBeca,
+  ProcesoAlojamiento,
+  PreasignacionLeer,
+  ResultadoProcesoAlojamiento,
 } from '@/types/estudiante'
 import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
 import { toCamelObject } from '@/lib/case'
@@ -965,6 +968,18 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
     if (!response.ok) {
       throw new ErrorHttp(response.status, await apiErrorMessage(response))
     }
+  }
+
+  async obtenerProcesosAlojamiento(): Promise<ProcesoAlojamiento[]> {
+    return solicitarApi<ProcesoAlojamiento[]>('/procesos-alojamiento')
+  }
+
+  async obtenerProcesoAlojamiento(id: number): Promise<ProcesoAlojamiento> {
+    return solicitarJson<ProcesoAlojamiento>(`/procesos-alojamiento/${id}`)
+  }
+
+  async obtenerPreasignacionesProceso(id: number): Promise<PreasignacionLeer[]> {
+    return solicitarApi<PreasignacionLeer[]>(`/procesos-alojamiento/${id}/preasignaciones`)
   }
 
   async obtenerAtributos(): Promise<AtributoDisponible[]> {

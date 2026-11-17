@@ -205,3 +205,42 @@ export interface ConjuntoReglaCrear {
   condiciones: CondicionRegla[]
   prioridades: PrioridadRegla[]
 }
+
+export interface ProcesoAlojamiento {
+  id: number
+  nombre: string
+  tipo: string
+  estado: string
+  periodo_registro_id: number
+  conjunto_regla_id: number
+  creado_por: number
+  creado_en: string
+  preasignaciones: number
+  restricciones: number
+}
+
+export interface PreasignacionLeer {
+  id: number
+  estudiante_id: number
+  estudiante: string
+  cuarto_id: number
+  cuarto: string
+  puntaje: number | null
+  bloqueada: boolean
+  estado: string
+}
+
+export interface ResultadoProcesoAlojamiento {
+  id: number
+  nombre: string
+  tipo: string
+  estado: string
+  creado_en: string
+  preasignaciones: PreasignacionLeer[]
+  restricciones: number
+}
+
+export interface ProcesosAgrupados {
+  procesos_previos: ProcesoAlojamiento[]
+  proceso_activo: ProcesoAlojamiento | null
+}
