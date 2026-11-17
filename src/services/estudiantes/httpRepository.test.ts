@@ -260,7 +260,7 @@ describe('HttpEstudiantesRepository', () => {
       })
 
       expect(mockApiFetch).toHaveBeenCalledWith(
-        '/api/v1/estudiantes/conjuntos-regla',
+        '/api/v1/conjuntos-regla',
         expect.objectContaining({ method: 'POST' }),
       )
       expect(resultado.id).toBe(7)

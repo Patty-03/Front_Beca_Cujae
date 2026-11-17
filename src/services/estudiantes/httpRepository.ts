@@ -127,7 +127,7 @@ async function obtenerOperadores(): Promise<OperadorDisponible[]> {
 async function crearConjuntoRegla(
   conjunto: ConjuntoReglaCrear,
 ): Promise<{ id: number }> {
-  return solicitarJson<{ id: number }>('/conjuntos-regla', {
+  return solicitarApi<{ id: number }>('/conjuntos-regla', {
     method: 'POST',
     body: JSON.stringify({
       nombre: conjunto.nombre,
