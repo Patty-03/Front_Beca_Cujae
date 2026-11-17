@@ -233,7 +233,7 @@ async function guardar() {
         .map((d) => d.error)
         .filter(Boolean)
         .join('; ')
-      toast.warning('Asignacion parcial', {
+      toast.warning('Asignación parcial', {
         description: `${exitosos} asignados, ${fallidos} fallidos.${errores ? ' Errores: ' + errores : ''}`,
       })
     } else {
@@ -245,7 +245,11 @@ async function guardar() {
     open.value = false
     emit('asignados', resultado)
   } catch (caught) {
-    errorGlobal.value = caught instanceof Error ? caught.message : 'No se pudo completar la asignacion masiva.'
+    const mensaje = caught instanceof Error ? caught.message : 'No se pudo completar la asignación masiva.'
+    errorGlobal.value = mensaje
+    toast.error('Error al asignar cuartos', {
+      description: mensaje,
+    })
   } finally {
     asignando.value = false
   }
