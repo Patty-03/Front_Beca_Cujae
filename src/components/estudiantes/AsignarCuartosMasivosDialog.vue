@@ -299,6 +299,11 @@ function obtenerValorTexto(condicion: CondicionRegla): string {
   }
   return ''
 }
+
+function valoresPermitidosDisponibles(atributoId: number): boolean {
+  const a = atributos.value.find((at) => at.id === atributoId)
+  return a?.valoresPermitidos?.length ?? 0 > 0
+}
 </script>
 
 <template>
@@ -422,19 +427,24 @@ function obtenerValorTexto(condicion: CondicionRegla): string {
                       </select>
                     </div>
                     <div v-else-if="valorPermitidoEsValido(atributoSeleccionado, operadorSeleccionado)">
-                      <select
-                        v-model="valorPermitidoId"
-                        class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="" disabled>Seleccionar valor...</option>
-                        <option
-                          v-for="valor in obtenerValoresPermitidos(atributoSeleccionado)"
-                          :key="valor.id"
-                          :value="valor.id"
+                      <div v-if="valoresPermitidosDisponibles(atributoSeleccionado).length > 0">
+                        <select
+                          v-model="valorPermitidoId"
+                          class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
-                          {{ valor.valor }}
-                        </option>
-                      </select>
+                          <option value="" disabled>Seleccionar valor...</option>
+                          <option
+                            v-for="valor in obtenerValoresPermitidos(atributoSeleccionado)"
+                            :key="valor.id"
+                            :value="valor.id"
+                          >
+                            {{ valor.valor }}
+                          </option>
+                        </select>
+                      </div>
+                      <div v-else class="text-sm text-muted-foreground">
+                        No hay valores configurados para este atributo.
+                      </div>
                     </div>
                     <div v-else class="text-sm text-muted-foreground">
                       No hay campo de valor disponible para este atributo y operador.
