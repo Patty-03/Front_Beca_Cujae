@@ -9,11 +9,17 @@ import type {
   TipoIngreso,
 } from '@/types/estudiante'
 import { computed, ref, watch } from 'vue'
-import { LoaderCircleIcon } from '@lucide/vue'
+import { LoaderCircleIcon, CircleAlertIcon } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogClose,
@@ -182,6 +188,36 @@ function obtenerValorTexto(condicion: CondicionRegla): string {
 function valoresPermitidosDisponibles(atributoId: number): boolean {
   const a = atributos.value.find((at) => at.id === atributoId)
   return (a?.valoresPermitidos?.length ?? 0) > 0
+}
+
+function valorTextoEsValido(atributoId: number, operadorId: number): boolean {
+  const a = atributos.value.find((at) => at.id === atributoId)
+  const o = operadores.value.find((op) => op.id === operadorId)
+  return a?.tipoDatoNombre === 'texto' && o?.simbolo === 'IGUAL'
+}
+
+function valorEnteroEsValido(atributoId: number, operadorId: number): boolean {
+  const a = atributos.value.find((at) => at.id === atributoId)
+  const o = operadores.value.find((op) => op.id === operadorId)
+  return ['entero'].includes(a?.tipoDatoNombre ?? '') && ['IGUAL', 'MAYOR_IGUAL', 'MENOR_IGUAL'].includes(o?.simbolo ?? '')
+}
+
+function valorFechaEsValido(atributoId: number, operadorId: number): boolean {
+  const a = atributos.value.find((at) => at.id === atributoId)
+  const o = operadores.value.find((op) => op.id === operadorId)
+  return a?.tipoDatoNombre === 'fecha' && o?.simbolo === 'IGUAL'
+}
+
+function valorBoolEsValido(atributoId: number, operadorId: number): boolean {
+  const a = atributos.value.find((at) => at.id === atributoId)
+  const o = operadores.value.find((op) => op.id === operadorId)
+  return a?.tipoDatoNombre === 'booleano' && o?.simbolo === 'IGUAL'
+}
+
+function valorPermitidoEsValido(atributoId: number, operadorId: number): boolean {
+  const a = atributos.value.find((at) => at.id === atributoId)
+  const o = operadores.value.find((op) => op.id === operadorId)
+  return a?.tipoDatoNombre === 'referencia a entidad' && o?.simbolo === 'IGUAL'
 }
 
 function agregarCondicion() {
@@ -388,3 +424,276 @@ function seleccionarProcesoPrevio(proceso: ProcesoAlojamiento) {
   cargarPreasignaciones()
 }
 </script>
+
+<template>
+  <Dialog v-model:open="open">
+    <DialogContent class="sm:max-w-5xl">
+      <DialogHeader>
+        <DialogTitle>Asignar cuartos masivamente</DialogTitle>
+        <DialogDescription v-if="paso === 'configurar'">
+          Configura las reglas de asignacion. El sistema asignara cuartos automaticamente a cada estudiante.
+        </DialogDescription>
+        <DialogDescription v-if="paso === 'confirmar'">
+          Revisa las asignaciones antes de confirmar.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="grid gap-4">
+        <!-- Paso 1: Configurar reglas -->
+        <div v-if="paso === 'configurar'">
+          <div v-if="cargando" class="flex items-center gap-2 text-sm text-muted-foreground">
+            <LoaderCircleIcon class="size-4 animate-spin" />
+            <span>Cargando atributos y cuartos...</span>
+          </div>
+
+          <Alert v-if="errorGlobal" variant="destructive">
+            <CircleAlertIcon />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{{ errorGlobal }}</AlertDescription>
+          </Alert>
+
+          <!-- Resumen -->
+          <div class="grid gap-4">
+            <Card class="p-4">
+              <CardHeader>
+                <CardTitle>Estudiantes sin cuarto</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p class="text-2xl font-bold">{{ totalSinCuarto }}</p>
+                <p class="text-sm text-muted-foreground">Estudiantes que necesitan cuarto.</p>
+              </CardContent>
+            </Card>
+            <Card class="p-4">
+              <CardHeader>
+                <CardTitle>Cuartos disponibles</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p class="text-2xl font-bold">{{ cuartosDisponibles.length }}</p>
+                <p class="text-sm text-muted-foreground">Cuartos habitables para asignar.</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <!-- Formulario de reglas -->
+          <Card class="p-4">
+            <CardHeader>
+              <CardTitle>Condiciones de asignacion</CardTitle>
+              <CardDescription>
+                Define quien puede recibir cuarto segun sus atributos.
+                Las condiciones del mismo atributo se combinan con "O";
+                de atributos distintos, con "Y".
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div class="">
+                  <label class="text-sm font-medium mb-1">Atributo</label>
+                  <select
+                    v-model="atributoSeleccionado"
+                    class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="" disabled>Seleccionar atributo...</option>
+                    <option v-for="atributo in atributos" :key="atributo.id" :value="atributo.id">
+                      {{ atributo.nombre }}
+                    </option>
+                  </select>
+                </div>
+                <div class="">
+                  <label class="text-sm font-medium mb-1">Operador</label>
+                  <select
+                    v-model="operadorSeleccionado"
+                    class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="" disabled>Seleccionar operador...</option>
+                    <option v-for="operador in operadores" :key="operador.id" :value="operador.id">
+                      {{ operador.simbolo }} - {{ operador.nombre }}
+                    </option>
+                  </select>
+                </div>
+                <div class="">
+                  <label class="text-sm font-medium mb-1">Valor</label>
+                  <div v-if="atributoSeleccionado && operadorSeleccionado">
+                    <div v-if="valorTextoEsValido(atributoSeleccionado, operadorSeleccionado)">
+                      <input
+                        v-model="valorTexto"
+                        type="text"
+                        placeholder="Valor de texto"
+                        class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div v-else-if="valorEnteroEsValido(atributoSeleccionado, operadorSeleccionado)">
+                      <input
+                        v-model="valorEntero"
+                        type="number"
+                        placeholder="Valor numerico"
+                        class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div v-else-if="valorFechaEsValido(atributoSeleccionado, operadorSeleccionado)">
+                      <input
+                        v-model="valorFecha"
+                        type="date"
+                        class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div v-else-if="valorBoolEsValido(atributoSeleccionado, operadorSeleccionado)">
+                      <select
+                        v-model="valorBool"
+                        class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="true">Verdadero</option>
+                        <option value="false">Falso</option>
+                      </select>
+                    </div>
+                    <div v-else-if="valorPermitidoEsValido(atributoSeleccionado, operadorSeleccionado)">
+                      <div v-if="valoresPermitidosDisponibles(atributoSeleccionado).length > 0">
+                        <select
+                          v-model="valorPermitidoId"
+                          class="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="" disabled>Seleccionar valor...</option>
+                          <option
+                            v-for="valor in obtenerValoresPermitidos(atributoSeleccionado)"
+                            :key="valor.id"
+                            :value="valor.id"
+                          >
+                            {{ valor.valor }}
+                          </option>
+                        </select>
+                      </div>
+                      <div v-else class="text-sm text-muted-foreground">
+                        No hay valores configurados para este atributo.
+                      </div>
+                    </div>
+                    <div v-else class="text-sm text-muted-foreground">
+                      No hay campo de valor disponible para este atributo y operador.
+                    </div>
+                  </div>
+                  <button
+                    v-if="atributoSeleccionado && operadorSeleccionado"
+                    class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    @click="agregarCondicion"
+                  >
+                    Agregar condicion
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="condiciones.length > 0" class="mt-4">
+                <p class="text-sm font-medium mb-2">Condiciones activas:</p>
+                <div class="space-y-2">
+                  <div
+                    v-for="(condicion, idx) in condiciones"
+                    :key="idx"
+                    class="flex items-center gap-2 p-2 rounded-md border bg-muted/50"
+                  >
+                    <span class="text-sm">
+                      {{ obtenerAtributoNombre(condicion.atributoDefId) }}
+                      {{ obtenerOperadorNombre(condicion.operadorId) }}
+                      {{ obtenerValorTexto(condicion) }}
+                    </span>
+                    <button
+                      class="ml-auto p-1 hover:bg-red-50 rounded"
+                      @click="quitarCondicion(idx)"
+                      title="Quitar condicion"
+                    >
+                      <span class="text-red-500">x</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div class="flex justify-end mt-6">
+            <Button type="button" variant="outline" @click="paso = 'configurar'">
+              Volver
+            </Button>
+            <Button
+              type="button"
+              :disabled="condiciones.length === 0 || cuartosDisponibles.length === 0"
+              @click="avanzarARedesignar"
+            >
+              Siguiente: Crear proceso y asignar
+            </Button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Confirmar -->
+        <div v-if="paso === 'confirmar'">
+          <p class="text-muted-foreground text-sm">
+            {{ totalSinCuarto }} estudiante(s) sin cuarto asignado.
+            {{ cuartosDisponibles.length }} cuarto(s) habitable(s) disponible(s).
+            El sistema asignara automaticamente un cuarto a cada estudiante en orden.
+          </p>
+
+          <div class="max-h-[500px] overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Estudiante</TableHead>
+                  <TableHead class="w-64">Cuarto asignado</TableHead>
+                  <TableHead class="w-32">Capacidad</TableHead>
+                  <TableHead class="w-20">Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow
+                  v-for="estudiante in estudiantesSinCuarto"
+                  :key="estudiante.id"
+                >
+                  <TableCell class="font-medium">
+                    {{ estudiante.nombre }}
+                    <p class="text-muted-foreground text-xs">{{ estudiante.carnet }}</p>
+                  </TableCell>
+                  <TableCell>
+                    <span v-if="cuartosSeleccionados[estudiante.id]" class="text-sm">
+                      Cuarto {{ cuartosDisponibles.find(c => c.id === cuartosSeleccionados[estudiante.id])?.nombre }}
+                      <span class="text-muted-foreground text-xs ml-2">
+                        {{ cuartosDisponibles.find(c => c.id === cuartosSeleccionados[estudiante.id])?.edificio }}
+                      </span>
+                    </span>
+                    <span v-else class="text-muted-foreground text-xs">
+                      Sin cuarto disponible
+                    </span>
+                  </TableCell>
+                  <TableCell class="text-center">
+                    <Badge variant="secondary">{{ capacidadDe(cuartosSeleccionados[estudiante.id]) }}</Badge>
+                  </TableCell>
+                  <TableCell class="text-center">
+                    <span v-if="cuartosSeleccionados[estudiante.id]" class="text-emerald-600 text-sm">
+                      Asignado
+                    </span>
+                    <span v-else class="text-muted-foreground text-xs">
+                      –
+                    </span>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        <div v-if="cuartosDisponibles.length === 0 && !cargando && paso === 'configurar'" class="text-center py-8 text-muted-foreground">
+          <p>No hay cuartos habitables disponibles para asignar.</p>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <DialogClose as-child>
+          <Button type="button" variant="outline">
+            {{ paso === 'configurar' ? 'Cancelar' : 'Volver' }}
+          </Button>
+        </DialogClose>
+        <Button
+          type="button"
+          :disabled="asignando || Object.keys(cuartosSeleccionados).length === 0 || cuartosDisponibles.length === 0"
+          @click="paso === 'configurar' ? avanzarARedesignar : guardar"
+        >
+          <LoaderCircleIcon v-if="asignando" class="animate-spin" />
+          {{ paso === 'configurar' ? 'Crear proceso y asignar' : 'Asignar a ' + Object.keys(cuartosSeleccionados).length + ' estudiante(s)' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+</template>
