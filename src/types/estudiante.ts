@@ -118,6 +118,7 @@ export interface PrevisualizacionImportacion {
 export interface ResultadoImportacion {
   resumen: ResumenImportacion
   importadas: EstudianteResumen[]
+  primerError?: string
 }
 
 export interface SugerenciaCuarto {

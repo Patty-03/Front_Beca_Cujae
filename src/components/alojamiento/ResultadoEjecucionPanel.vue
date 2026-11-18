@@ -4,17 +4,22 @@ import { computed, ref } from 'vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatNumber } from '@/lib/format'
 import { AlertCircleIcon, ClockIcon, LockKeyholeIcon, RefreshCwIcon, SearchIcon, UsersIcon } from '@lucide/vue'
 import KpiCard from '@/components/infraestructura/KpiCard.vue'
 
+const PAGE_SIZE = 50
+
 const props = withDefaults(
-  defineProps<{ resultado: ResultadoEjecucion | null; ejecutando?: boolean }>(),
-  { ejecutando: false },
+  defineProps<{ resultado: ResultadoEjecucion | null; ejecutando?: boolean; compact?: boolean }>(),
+  { ejecutando: false, compact: false },
 )
 
 const busqueda = ref('')
+const visiblesNo = ref(PAGE_SIZE)
+const visiblesOmitidos = ref(PAGE_SIZE)
 const noAlojadosFiltrados = computed(() => {
   const texto = busqueda.value.toLowerCase()
   if (!texto) return props.resultado?.noAlojados ?? []
@@ -22,6 +27,8 @@ const noAlojadosFiltrados = computed(() => {
     (n) => n.estudiante.toLowerCase().includes(texto) || n.motivo.toLowerCase().includes(texto) || n.detalle.toLowerCase().includes(texto),
   )
 })
+const noAlojadosVisibles = computed(() => noAlojadosFiltrados.value.slice(0, visiblesNo.value))
+const omitidosVisibles = computed(() => (props.resultado?.omitidos ?? []).slice(0, visiblesOmitidos.value))
 
 function varianteEstado(estado: string) {
   const e = estado.toLowerCase()
@@ -45,45 +52,51 @@ function varianteEstado(estado: string) {
       <KpiCard label="Relajadas" :value="formatNumber(resultado.restriccionesRelajadas.length)" :icon="RefreshCwIcon" tono="primary" />
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-3">
       <span class="text-xs font-medium text-muted-foreground">Solver:</span>
       <Badge :variant="varianteEstado(resultado.estadoSolver)">{{ resultado.estadoSolver }}</Badge>
+      <span v-if="compact" class="text-xs text-muted-foreground">Candidatos: {{ formatNumber(resultado.candidatos) }} · No alojados: {{ formatNumber(resultado.noAlojados.length) }} · Omitidos: {{ formatNumber(resultado.omitidos.length) }}</span>
     </div>
+    <p v-if="compact" class="text-xs text-muted-foreground">Los listados detallados se muestran paginados más abajo para evitar sobrecarga.</p>
 
-    <Card v-if="resultado.noAlojados.length || busqueda">
+    <Card v-if="!compact && (resultado.noAlojados.length || busqueda)">
       <CardHeader class="flex flex-row items-center justify-between gap-2">
         <CardTitle>No alojados</CardTitle>
         <div class="relative md:w-64">
           <SearchIcon class="text-muted-foreground pointer-events-none absolute left-2.5 top-2.5 size-4" />
-          <Input v-model="busqueda" class="pl-8 w-full" placeholder="Buscar estudiante o motivo..." />
+          <Input v-model="busqueda" class="pl-8 w-full" placeholder="Buscar estudiante o motivo..." @input="visiblesNo = PAGE_SIZE" />
         </div>
       </CardHeader>
       <CardContent>
         <div v-if="!noAlojadosFiltrados.length" class="py-4 text-center text-xs text-muted-foreground">
           {{ busqueda ? `Sin resultados para "${busqueda}".` : 'Todos los candidatos fueron alojados.' }}
         </div>
-        <Table v-else>
-          <TableHeader><TableRow><TableHead>Estudiante</TableHead><TableHead>Motivo</TableHead><TableHead>Detalle</TableHead><TableHead class="w-28">¿Relajando?</TableHead></TableRow></TableHeader>
-          <TableBody>
-            <TableRow v-for="n in noAlojadosFiltrados" :key="n.estudianteId" :class="n.seResolveriaRelajando ? 'bg-amber-50' : ''">
-              <TableCell class="font-medium">{{ n.estudiante }}</TableCell>
-              <TableCell class="text-sm">{{ n.motivo }}</TableCell>
-              <TableCell class="text-sm text-muted-foreground">{{ n.detalle }}</TableCell>
-              <TableCell class="text-center"><Badge :variant="n.seResolveriaRelajando ? 'outline' : 'secondary'" class="text-xs">{{ n.seResolveriaRelajando ? 'Sí' : 'No' }}</Badge></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+        <template v-else>
+          <Table>
+            <TableHeader><TableRow><TableHead>Estudiante</TableHead><TableHead>Motivo</TableHead><TableHead>Detalle</TableHead><TableHead class="w-28">¿Relajando?</TableHead></TableRow></TableHeader>
+            <TableBody>
+              <TableRow v-for="n in noAlojadosVisibles" :key="n.estudianteId" :class="n.seResolveriaRelajando ? 'bg-amber-50' : ''">
+                <TableCell class="font-medium">{{ n.estudiante }}</TableCell>
+                <TableCell class="text-sm">{{ n.motivo }}</TableCell>
+                <TableCell class="text-sm text-muted-foreground">{{ n.detalle }}</TableCell>
+                <TableCell class="text-center"><Badge :variant="n.seResolveriaRelajando ? 'outline' : 'secondary'" class="text-xs">{{ n.seResolveriaRelajando ? 'Sí' : 'No' }}</Badge></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <Button v-if="noAlojadosFiltrados.length > visiblesNo" variant="outline" class="mt-2 w-full" @click="visiblesNo += PAGE_SIZE">Mostrar más ({{ noAlojadosFiltrados.length - visiblesNo }} restantes)</Button>
+        </template>
       </CardContent>
     </Card>
 
-    <Card v-if="resultado.omitidos.length">
+    <Card v-if="!compact && resultado.omitidos.length">
       <CardHeader><CardTitle>Omitidos</CardTitle><CardDescription>Estudiantes que no entraron en la asignación.</CardDescription></CardHeader>
       <CardContent class="space-y-2">
-        <div v-for="o in resultado.omitidos" :key="o.estudianteId" class="flex flex-wrap items-center justify-between gap-2 rounded border bg-muted/50 p-2 text-sm">
+        <div v-for="o in omitidosVisibles" :key="o.estudianteId" class="flex flex-wrap items-center justify-between gap-2 rounded border bg-muted/50 p-2 text-sm">
           <span class="font-medium">{{ o.estudiante }}</span>
           <span class="text-muted-foreground">{{ o.motivo }}</span>
           <span class="text-xs text-muted-foreground">{{ o.detalle }}</span>
         </div>
+        <Button v-if="resultado.omitidos.length > visiblesOmitidos" variant="outline" class="w-full" @click="visiblesOmitidos += PAGE_SIZE">Mostrar más ({{ resultado.omitidos.length - visiblesOmitidos }} restantes)</Button>
       </CardContent>
     </Card>
 

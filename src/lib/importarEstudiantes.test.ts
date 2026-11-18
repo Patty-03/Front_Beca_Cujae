@@ -1,196 +1,91 @@
-import { describe, expect, it } from 'vitest'
-import type { EstudianteImportado } from '@/types/estudiante'
-import { COLUMNAS_ESTUDIANTES, parsearFilasEstudiantes } from './importarEstudiantes'
+﻿import { describe, expect, it } from 'vitest'
+import { parsearFilasEstudiantes, seleccionarHojaDatos } from './importarEstudiantes'
 
-type Campo = keyof EstudianteImportado
-
-const base: Record<Campo, string | number> = {
-  carnet: 'CI-2026001',
-  nombre: 'Ana Rodríguez Pérez',
-  fechaNacimiento: '2007-05-18',
-  sexo: 'F',
-  pais: 'Cuba',
-  provincia: 'Villa Clara',
-  municipio: 'Santa Clara',
-  facultad: 'Facultad de Ingeniería Informática',
-  carrera: 'Ingeniería Informática',
-  especialidad: 'Ciencias Informáticas',
-  anioAcademico: 1,
-  grupo: '11',
-  preuniversitario: 'IPVCE Federico Engels',
-  tipoIngreso: 'Residente en provincia',
-  estadoBeca: 'Activo',
-  fechaIngreso: '2026-09-01',
-  direccionParticular: 'Calle 12 #34',
-  telefono: '51234567',
-  padecimiento: '',
-  madre: 'María Pérez',
-  padre: 'José Rodríguez',
-  telefonoMadre: '52345678',
-  telefonoPadre: '53456789',
-  militancia: 'UJC',
-  observaciones: '',
-  zonaProcedencia: '',
-  universidadOrigen: '',
-}
-
-const encabezados = COLUMNAS_ESTUDIANTES.map((columna) => columna.encabezado)
-
-function fila(cambios: Partial<Record<Campo, string | number | null>> = {}) {
-  return COLUMNAS_ESTUDIANTES.map(
-    (columna) => cambios[columna.campo] ?? base[columna.campo] ?? null,
-  )
-}
-
-describe('parsearFilasEstudiantes', () => {
-  it('convierte una fila válida en un estudiante importable', () => {
-    const resultado = parsearFilasEstudiantes([encabezados, fila()])
-
-    expect(resultado.resumen).toEqual({
-      total: 1,
-      validas: 1,
-      omitidas: 0,
-      rechazadas: 0,
-    })
-    expect(resultado.filas[0]?.datos?.nombre).toBe('Ana Rodríguez Pérez')
-    expect(resultado.filas[0]?.datos?.anioAcademico).toBe(1)
-    expect(resultado.filas[0]?.datos?.tipoIngreso).toBe('residente_provincia')
-  })
-
-  it('acepta fechas con formato dd/mm/aaaa', () => {
-    const resultado = parsearFilasEstudiantes(
-      [encabezados, fila({ fechaNacimiento: '18/05/2007', fechaIngreso: '01/09/2026' })],
-    )
-
-    expect(resultado.resumen.validas).toBe(1)
-    expect(resultado.filas[0]?.datos?.fechaNacimiento).toBe('2007-05-18')
-    expect(resultado.filas[0]?.datos?.fechaIngreso).toBe('2026-09-01')
-  })
-
-  it('omite La Habana, extranjeros y carnets ya registrados', () => {
-    const resultado = parsearFilasEstudiantes(
-      [
-        encabezados,
-        fila({ carnet: 'CI-2026100', provincia: 'La Habana' }),
-        fila({
-          carnet: 'CI-2026101',
-          provincia: 'Matanzas',
-          tipoIngreso: 'Extranjero por convenio',
-        }),
-        fila({ carnet: 'CI-2026102' }),
-      ],
-      ['CI-2026102'],
-    )
-
-    expect(resultado.resumen.validas).toBe(0)
-    expect(resultado.resumen.omitidas).toBe(3)
-    expect(resultado.filas[0]?.omision).toContain('La Habana')
-    expect(resultado.filas[1]?.omision).toContain('Residente en provincia')
-    expect(resultado.filas[2]?.omision).toContain('ya está registrado')
-  })
-
-  it('omite carnets duplicados dentro del mismo archivo', () => {
-    const resultado = parsearFilasEstudiantes([encabezados, fila(), fila()])
-
-    expect(resultado.resumen.validas).toBe(1)
-    expect(resultado.resumen.omitidas).toBe(1)
-    expect(resultado.filas[1]?.omision).toContain('duplicado')
-  })
-
-  it('rechaza filas con datos inválidos', () => {
-    const resultado = parsearFilasEstudiantes(
-      [
-        encabezados,
-        fila({
-          carnet: 'X',
-          nombre: 'A',
-          fechaNacimiento: '31/02/2007',
-          sexo: 'otro',
-          provincia: 'Marte',
-          anioAcademico: 9,
-          tipoIngreso: 'desconocido',
-          estadoBeca: 'raro',
-        }),
-      ],
-    )
-
-    expect(resultado.resumen.rechazadas).toBe(1)
-    expect(resultado.filas[0]?.datos).toBeNull()
-    expect(resultado.filas[0]?.errores.length).toBeGreaterThan(4)
-  })
-
-  it('busca encabezados con alias y rechaza columnas obligatorias faltantes', () => {
-    const titulo = ['Reporte de matrícula']
-    const alias = [
-      'Carnet',
-      'Nombre completo',
-      'Nacimiento',
-      'Sexo',
-      'País',
-      'Provincia',
-      'Municipio',
-      'Facultad',
-      'Carrera',
-      'Especialidad',
-      'Año académico',
-      'Grupo',
-      'Preuniversitario',
-      'Tipo de ingreso',
-      'Estado de beca',
-      'Fecha de ingreso',
-      'Dirección particular',
-      'Teléfono',
-      'Padecimiento',
-      'Madre',
-      'Padre',
-      'Teléfono de la madre',
-      'Teléfono del padre',
-      'Militancia',
-      'Observaciones',
-      'Zona de procedencia',
-      'Universidad de origen',
+describe('parsearFilasEstudiantes - formato institucional', () => {
+  it('acepta formato institucional, infiere fecha desde CI y asume año 1', () => {
+    const filas = [
+      ['Carrera', 'Vía de Ingreso', 'Modalidad', 'CI', 'Apellidos y Nombre(S)', 'Sexo', 'Preuniversitario', 'Prov', 'Mun'],
+      ['Ing. Informática', 'Institutos Preuniversitarios', 'Curso Diurno', '03033067054', 'Rodríguez Pérez Ana', 'F', 'IPVCE X', 'LH', 'Playa'],
     ]
-
-    const resultado = parsearFilasEstudiantes([titulo, alias, fila()])
-    expect(resultado.resumen.validas).toBe(1)
-
-    const sinTelefono = alias.filter((columna) => columna !== 'Teléfono')
-    expect(() => parsearFilasEstudiantes([sinTelefono, fila()])).toThrow('Teléfono')
+    const r = parsearFilasEstudiantes(filas)
+    expect(r.resumen.total).toBe(1)
+    expect(r.resumen.validas).toBe(1)
+    expect(r.filas[0]?.datos?.fechaNacimiento).toBe('2003-03-30')
+    expect(r.filas[0]?.datos?.anioAcademico).toBe(1)
+    expect(r.filas[0]?.datos?.provincia).toBe('La Habana')
+    expect(r.filas[0]?.datos?.carrera).toBe('Ing. Informática')
+    expect(r.filas[0]?.datos?.telefono).toBe('')
   })
 
-  it('acepta año académico entre 1 y 6', () => {
-    for (let anio = 1; anio <= 6; anio++) {
-      const resultado = parsearFilasEstudiantes(
-        [encabezados, fila({ anioAcademico: anio })],
-      )
-      expect(resultado.resumen.validas).toBe(1)
-      expect(resultado.filas[0]?.datos?.anioAcademico).toBe(anio)
-    }
+  it('infiere fecha desde CI numérico con cero inicial perdido', () => {
+    const filas = [
+      ['Carrera', 'CI', 'Apellidos y Nombre(S)', 'Sexo', 'Prov', 'Mun'],
+      ['Ing. Civil', 3033067054, 'Ana A', 'F', 'LH', 'Playa'],
+    ]
+    const r = parsearFilasEstudiantes(filas)
+    expect(r.resumen.validas).toBe(1)
+    expect(r.filas[0]?.datos?.fechaNacimiento).toBe('2003-03-30')
   })
 
-  it('rechaza año académico fuera de rango 1-6', () => {
-    const resultado = parsearFilasEstudiantes(
-      [encabezados, fila({ anioAcademico: 7 })],
-    )
-    expect(resultado.resumen.rechazadas).toBe(1)
-    expect(resultado.filas[0]?.datos).toBeNull()
+  it('mapea siglas de provincia y modalidad a tipo de ingreso', () => {
+    const filas = [
+      ['Carrera', 'Modalidad', 'CI', 'Apellidos y Nombre(S)', 'Sexo', 'Prov', 'Mun'],
+      ['Ing. Civil', 'Lejanía', '03033067054', 'Ana A', 'F', 'MT', 'Matanzas'],
+      ['Ing. Civil', 'Traslado', '04033067051', 'B B', 'M', 'VC', 'Santa Clara'],
+    ]
+    const r = parsearFilasEstudiantes(filas)
+    expect(r.resumen.validas).toBe(2)
+    expect(r.filas[0]?.datos?.provincia).toBe('Matanzas')
+    expect(r.filas[0]?.datos?.tipoIngreso).toBe('lejania')
+    expect(r.filas[1]?.datos?.provincia).toBe('Villa Clara')
+    expect(r.filas[1]?.datos?.tipoIngreso).toBe('traslado')
   })
 
-  it('rechaza fecha de nacimiento futura', () => {
-    const resultado = parsearFilasEstudiantes(
-      [encabezados, fila({ fechaNacimiento: '2030-01-01' })],
-    )
-    expect(resultado.resumen.rechazadas).toBe(1)
-    expect(resultado.filas[0]?.datos).toBeNull()
+  it('acepta provincias con diéresis/acentos, sin acentos y por sigla', () => {
+    const filas = [
+      ['Carrera', 'CI', 'Apellidos y Nombre(S)', 'Sexo', 'Prov', 'Mun'],
+      ['Ing. Civil', '03033067054', 'Ana A', 'F', 'Camagüey', 'Camagüey'],
+      ['Ing. Civil', '04033067051', 'Ana B', 'F', 'Camaguey', 'Florida'],
+      ['Ing. Civil', '05033067058', 'Ana C', 'F', 'CG', 'Camagüey'],
+      ['Ing. Civil', '06033067055', 'Ana D', 'F', 'SS', 'Trinidad'],
+    ]
+    const r = parsearFilasEstudiantes(filas)
+    expect(r.resumen.validas).toBe(4)
+    expect(r.filas[0]?.datos?.provincia).toBe('Camagüey')
+    expect(r.filas[1]?.datos?.provincia).toBe('Camagüey')
+    expect(r.filas[2]?.datos?.provincia).toBe('Camagüey')
+    expect(r.filas[3]?.datos?.provincia).toBe('Sancti Spíritus')
   })
 
-  it('rechaza carnet duplicado', () => {
-    const resultado = parsearFilasEstudiantes(
-      [encabezados, fila({ carnet: 'CI-2026100' }), fila({ carnet: 'CI-2026100' })],
-      [],
-    )
-    expect(resultado.resumen.validas).toBe(1)
-    expect(resultado.resumen.omitidas).toBe(1)
-    expect(resultado.filas[1]?.omision).toContain('duplicado')
+  it('omite duplicados y existentes y rechaza CI sin fecha inferible', () => {
+    const filas = [
+      ['Carrera', 'CI', 'Apellidos y Nombre(S)', 'Sexo', 'Prov', 'Mun'],
+      ['Ing. Civil', '03033067054', 'Ana A', 'F', 'LH', 'Playa'],
+      ['Ing. Civil', '03033067054', 'Ana B', 'F', 'LH', 'Playa'],
+      ['Ing. Civil', 'ABC123', 'Ana C', 'F', 'LH', 'Playa'],
+    ]
+    const r = parsearFilasEstudiantes(filas, ['03033067054'])
+    expect(r.resumen.omitidas).toBe(2)
+    expect(r.resumen.rechazadas).toBe(1)
+    expect(r.filas[2]?.errores.join(' ')).toContain('fecha de nacimiento')
+  })
+
+  it('selecciona la hoja con datos/encabezados', () => {
+    const hojas = [
+      { sheet: 'Resumen', data: [['Total', 1], ['x', 2]] },
+      { sheet: 'Listado', data: [['Carrera', 'CI', 'Apellidos y Nombre(S)', 'Sexo', 'Prov', 'Mun'], ['Ing', '03033067054', 'N', 'F', 'LH', 'P']] },
+    ]
+    const data = seleccionarHojaDatos(hojas)
+    expect(data[0]?.[1]).toBe('CI')
+  })
+
+  it('mantiene compatibilidad con formato anterior cuando trae columnas', () => {
+    const filas = [
+      ['Carnet', 'Nombre', 'Fecha de nacimiento', 'Sexo', 'Provincia', 'Municipio', 'Facultad', 'Carrera', 'Especialidad', 'Año académico', 'Tipo de ingreso', 'Estado de beca', 'Fecha de ingreso', 'Teléfono'],
+      ['05010112345', 'Ana', '2007-05-18', 'F', 'La Habana', 'Playa', 'FII', 'Ing. Informática', 'Ing. Informática', 1, 'Residente en provincia', 'Activo', '2026-09-01', '51234567'],
+    ]
+    const r = parsearFilasEstudiantes(filas)
+    expect(r.resumen.validas).toBe(1)
+    expect(r.filas[0]?.datos?.fechaNacimiento).toBe('2007-05-18')
   })
 })

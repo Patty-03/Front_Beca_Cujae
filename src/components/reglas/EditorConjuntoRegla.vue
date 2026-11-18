@@ -478,7 +478,6 @@ function etiquetaAtributo(id: number | '') {
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Seleccionar atributo...</SelectItem>
                 <SelectItem
                   v-for="a in atributos"
                   :key="a.id"
@@ -504,7 +503,6 @@ function etiquetaAtributo(id: number | '') {
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Seleccionar operador...</SelectItem>
                 <SelectItem
                   v-for="o in operadores"
                   :key="o.id"
@@ -556,7 +554,6 @@ function etiquetaAtributo(id: number | '') {
                   <SelectValue placeholder="Seleccionar valor..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Seleccionar...</SelectItem>
                   <SelectItem
                     v-for="v in valoresPermitidosDe(
                       Number(condicionForm.atributoId)
@@ -670,7 +667,6 @@ function etiquetaAtributo(id: number | '') {
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Seleccionar atributo...</SelectItem>
                 <SelectItem
                   v-for="a in atributos"
                   :key="a.id"

@@ -102,6 +102,5 @@ export function esProvinciaDeCuba(value: string): boolean {
 }
 
 export function esProvinciaImportable(value: string): boolean {
-  const provincia = normalizarClave(value)
-  return provincia !== '' && provincia !== normalizarClave('La Habana')
+  return esProvinciaDeCuba(value)
 }

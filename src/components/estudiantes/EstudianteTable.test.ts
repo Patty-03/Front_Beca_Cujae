@@ -53,7 +53,6 @@ describe('EstudianteTable', () => {
 
     expect(wrapper.exists()).toBe(true)
     expect(wrapper.text()).toContain('Estudiante')
-    expect(wrapper.text()).toContain('Procedencia')
     expect(wrapper.text()).toContain('Carrera')
   })
 })

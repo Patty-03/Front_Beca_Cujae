@@ -50,9 +50,7 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
         <TableHeader>
           <TableRow>
             <TableHead>Estudiante</TableHead>
-            <TableHead>Procedencia</TableHead>
             <TableHead>Carrera</TableHead>
-            <TableHead>Beca</TableHead>
             <TableHead>Cuarto</TableHead>
             <TableHead>Deberes</TableHead>
             <TableHead class="text-right">Acciones</TableHead>
@@ -67,25 +65,11 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
               </div>
             </TableCell>
             <TableCell>
-              <p>{{ estudiante.provincia }}</p>
-              <p class="text-muted-foreground text-xs">{{ estudiante.municipio }}</p>
-            </TableCell>
-            <TableCell>
               <p class="max-w-52 truncate">{{ estudiante.carrera }}</p>
               <p class="text-muted-foreground text-xs">
                 {{ estudiante.anioAcademico }}.º año
                 <span v-if="estudiante.grupo"> · {{ estudiante.grupo }}</span>
               </p>
-            </TableCell>
-            <TableCell>
-              <div class="space-y-1">
-                <Badge :variant="varianteEstado(estudiante.estadoBeca)">
-                  {{ ETIQUETAS_ESTADO_BECA[estudiante.estadoBeca] }}
-                </Badge>
-                <p class="text-muted-foreground text-xs">
-                  {{ ETIQUETAS_TIPO_INGRESO[estudiante.tipoIngreso] }}
-                </p>
-              </div>
             </TableCell>
             <TableCell>
               <div v-if="estudiante.asignacion">
@@ -113,8 +97,8 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
                 </span>
               </div>
             </TableCell>
-             <TableCell>
-               <div class="flex items-center justify-end gap-1">
+            <TableCell>
+              <div class="flex items-center justify-end gap-1">
                  <Button
                    variant="ghost"
                    size="icon-sm"
@@ -174,7 +158,7 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
             <div class="min-w-0">
               <p class="font-medium">{{ estudiante.nombre }}</p>
               <p class="text-muted-foreground text-xs">
-                {{ estudiante.carnet }} · {{ estudiante.provincia }}
+                {{ estudiante.carnet }}
               </p>
             </div>
             <Badge :variant="varianteEstado(estudiante.estadoBeca)">

@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
+﻿const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
 const FETCH_TIMEOUT_MS = 10000
 
@@ -78,17 +78,27 @@ async function fetchConTimeout(
   }
 }
 
-export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+export interface ApiFetchOptions extends RequestInit {
+  timeoutMs?: number
+}
+
+export async function apiFetch(path: string, init?: ApiFetchOptions): Promise<Response> {
+  const timeoutMs = init?.timeoutMs ?? FETCH_TIMEOUT_MS
+  const { timeoutMs: _omit, ...requestInit } = init ?? {}
   try {
-    return await fetchConTimeout(apiUrl(path), {
-      ...init,
-      credentials: 'include',
-      headers: crearHeaders(init),
-    })
+    return await fetchConTimeout(
+      apiUrl(path),
+      {
+        ...requestInit,
+        credentials: 'include',
+        headers: crearHeaders(requestInit),
+      },
+      timeoutMs,
+    )
   } catch (caught) {
     if (caught instanceof DOMException && caught.name === 'AbortError') {
       throw new Error(
-        `El servidor tardó demasiado en responder (más de ${FETCH_TIMEOUT_MS / 1000}s). Verifique que el backend esté en ejecución en ${API_BASE}.`,
+        `El servidor tardó demasiado en responder (más de ${timeoutMs / 1000}s). Verifique que el backend esté en ejecución en ${API_BASE}.`,
       )
     }
     throw new Error('No se pudo contactar con el servidor.')

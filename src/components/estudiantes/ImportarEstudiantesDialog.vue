@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type {
   FilaImportacionEstudiante,
   PrevisualizacionImportacion,
@@ -6,7 +6,6 @@ import type {
 } from '@/types/estudiante'
 import { computed, ref, watch } from 'vue'
 import {
-  CheckCircle2Icon,
   CircleAlertIcon,
   DownloadIcon,
   FileSpreadsheetIcon,
@@ -38,7 +37,6 @@ import {
 } from '@/components/ui/table'
 import { leerArchivoEstudiantes } from '@/lib/leerExcelEstudiantes'
 import { descargarPlantillaEstudiantes } from '@/lib/plantillaEstudiantes'
-import { formatNumber } from '@/lib/format'
 import { importarEstudiantes } from '@/services/estudiantes'
 
 const props = defineProps<{ carnetsExistentes: string[] }>()
@@ -51,12 +49,15 @@ const previsualizacion = ref<PrevisualizacionImportacion | null>(null)
 const error = ref('')
 const leyendo = ref(false)
 const importando = ref(false)
+const progreso = ref({ completados: 0, total: 0 })
 const descargandoPlantilla = ref(false)
 
-const filasVisibles = computed(() => previsualizacion.value?.filas.slice(0, 80) ?? [])
-const filasOcultas = computed(() =>
-  Math.max(0, (previsualizacion.value?.filas.length ?? 0) - filasVisibles.value.length),
+const filasIncidencias = computed(
+  () =>
+    previsualizacion.value?.filas.filter((fila) => fila.errores.length > 0 || !!fila.omision) ?? [],
 )
+const filasVisibles = computed(() => filasIncidencias.value.slice(0, 80))
+const filasOcultas = computed(() => Math.max(0, filasIncidencias.value.length - filasVisibles.value.length))
 
 const estudiantesValidos = computed(
   () =>
@@ -76,6 +77,7 @@ function limpiar() {
   error.value = ''
   leyendo.value = false
   importando.value = false
+  progreso.value = { completados: 0, total: 0 }
   if (inputArchivo.value) inputArchivo.value.value = ''
 }
 
@@ -88,13 +90,14 @@ async function alSeleccionar(event: Event) {
   error.value = ''
   archivoNombre.value = archivo.name
 
-  if (!archivo.name.toLowerCase().endsWith('.xlsx')) {
-    error.value = 'El archivo debe tener formato .xlsx. Descarga la plantilla para comenzar.'
+  const nombre = archivo.name.toLowerCase()
+  if (!nombre.endsWith('.xlsx') && !nombre.endsWith('.xls')) {
+    error.value = 'El archivo debe tener formato .xlsx o .xls. Descarga la plantilla para comenzar.'
     return
   }
 
-  if (archivo.size > 5 * 1024 * 1024) {
-    error.value = 'El archivo no puede superar los 5 MB.'
+  if (archivo.size > 10 * 1024 * 1024) {
+    error.value = 'El archivo no puede superar los 10 MB.'
     return
   }
 
@@ -117,13 +120,25 @@ async function confirmarImportacion() {
   }
 
   importando.value = true
+  error.value = ''
+  progreso.value = { completados: 0, total: estudiantesValidos.value.length }
   try {
-    const resultado = await importarEstudiantes(validos)
-    toast.success('Importación completada', {
-      description: `${resultado.resumen.validas} estudiantes importados de ${resultado.resumen.total} filas.`,
+    const resultado = await importarEstudiantes(validos, (completados, total) => {
+      progreso.value = { completados, total }
     })
-    open.value = false
-    emit('importado', resultado)
+    const { validas, omitidas, rechazadas } = resultado.resumen
+
+    if (validas > 0 && omitidas === 0 && rechazadas === 0) {
+      toast.success('Se importó el excel exitosamente.')
+      open.value = false
+      emit('importado', resultado)
+    } else if (validas > 0) {
+      toast.success('Se importó el archivo, pero algunas filas no se pudieron procesar.')
+      open.value = false
+      emit('importado', resultado)
+    } else {
+      error.value = resultado.primerError || 'No se import� ning�n estudiante. Verifica los datos e int�ntalo de nuevo.'
+    }
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'No se pudo importar el archivo.'
   } finally {
@@ -136,7 +151,7 @@ async function descargarPlantilla() {
   try {
     await descargarPlantillaEstudiantes()
     toast.success('Plantilla descargada', {
-      description: 'Completa la hoja Estudiantes y vuelve a importarla.',
+      description: 'Completa la hoja y vuelve a importarla.',
     })
   } catch (caught) {
     toast.error('No se pudo descargar la plantilla', {
@@ -149,7 +164,7 @@ async function descargarPlantilla() {
 
 function estadoFila(fila: FilaImportacionEstudiante): {
   etiqueta: string
-  variante: 'secondary' | 'outline' | 'destructive'
+  variante: 'outline' | 'destructive'
   motivo: string
 } {
   if (fila.errores.length > 0) {
@@ -159,10 +174,7 @@ function estadoFila(fila: FilaImportacionEstudiante): {
       motivo: fila.errores.join(' '),
     }
   }
-  if (fila.omision) {
-    return { etiqueta: 'Omitida', variante: 'outline', motivo: fila.omision }
-  }
-  return { etiqueta: 'Válida', variante: 'secondary', motivo: 'Lista para importar.' }
+  return { etiqueta: 'Omitida', variante: 'outline', motivo: fila.omision ?? '' }
 }
 </script>
 
@@ -172,28 +184,27 @@ function estadoFila(fila: FilaImportacionEstudiante): {
       <DialogHeader>
         <DialogTitle>Importar estudiantes</DialogTitle>
         <DialogDescription>
-          Carga un archivo XLSX con el formato de la plantilla institucional.
+          Carga un archivo Excel (.xlsx) con el formato institucional de prematrícula/nuevo ingreso.
         </DialogDescription>
       </DialogHeader>
 
       <div class="grid gap-5">
         <Alert>
           <FileSpreadsheetIcon />
-          <AlertTitle>Solo residentes en provincia</AlertTitle>
+          <AlertTitle>Formato de importación</AlertTitle>
           <AlertDescription>
-            Se importan únicamente estudiantes con tipo de ingreso
-            <strong>Residente en provincia</strong>. La Habana y los extranjeros se omiten.
+            Columnas requeridas: CI/Carnet, Nombre (Apellidos y Nombre(S)), Carrera, Sexo, Provincia/Prov, Municipio/Mun. La fecha de nacimiento se infiere del CI (YYMMDD); sin año académico se asume 1 (nuevo ingreso). Carnets duplicados/existentes se omiten y filas inválidas se rechazan.
           </AlertDescription>
         </Alert>
 
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div class="grid flex-1 gap-2">
-            <label for="archivo-estudiantes" class="text-sm font-medium">Archivo XLSX</label>
+            <label for="archivo-estudiantes" class="text-sm font-medium">Archivo Excel</label>
             <Input
               id="archivo-estudiantes"
               ref="inputArchivo"
               type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               :disabled="leyendo || importando"
               @change="alSeleccionar"
             />
@@ -214,6 +225,19 @@ function estadoFila(fila: FilaImportacionEstudiante): {
           Archivo seleccionado: {{ archivoNombre }}
         </p>
 
+        <div v-if="importando && progreso.total > 0" class="space-y-2">
+          <div class="flex justify-between text-xs text-muted-foreground">
+            <span>Importando estudiantes</span>
+            <span>{{ progreso.completados }} / {{ progreso.total }}</span>
+          </div>
+          <div class="w-full bg-muted rounded-full h-2">
+            <div
+              class="bg-primary h-2 rounded-full transition-all duration-300"
+              :style="{ width: `${(progreso.completados / progreso.total) * 100}%` }"
+            ></div>
+          </div>
+        </div>
+
         <div v-if="leyendo" class="text-muted-foreground flex items-center gap-2 text-sm">
           <LoaderCircleIcon class="size-4 animate-spin" />
           Leyendo y validando el archivo...
@@ -225,34 +249,7 @@ function estadoFila(fila: FilaImportacionEstudiante): {
           <AlertDescription>{{ error }}</AlertDescription>
         </Alert>
 
-        <template v-if="previsualizacion">
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div class="rounded-md border p-3">
-              <p class="text-muted-foreground text-xs">Filas</p>
-              <p class="text-xl font-semibold tabular-nums">
-                {{ formatNumber(previsualizacion.resumen.total) }}
-              </p>
-            </div>
-            <div class="rounded-md border p-3">
-              <p class="text-muted-foreground text-xs">Válidas</p>
-              <p class="text-xl font-semibold text-emerald-700 tabular-nums">
-                {{ formatNumber(previsualizacion.resumen.validas) }}
-              </p>
-            </div>
-            <div class="rounded-md border p-3">
-              <p class="text-muted-foreground text-xs">Omitidas</p>
-              <p class="text-xl font-semibold text-amber-700 tabular-nums">
-                {{ formatNumber(previsualizacion.resumen.omitidas) }}
-              </p>
-            </div>
-            <div class="rounded-md border p-3">
-              <p class="text-muted-foreground text-xs">Rechazadas</p>
-              <p class="text-xl font-semibold text-destructive tabular-nums">
-                {{ formatNumber(previsualizacion.resumen.rechazadas) }}
-              </p>
-            </div>
-          </div>
-
+        <template v-if="previsualizacion && filasVisibles.length > 0">
           <div class="max-h-72 overflow-auto rounded-md border">
             <Table>
               <TableHeader>
@@ -268,15 +265,11 @@ function estadoFila(fila: FilaImportacionEstudiante): {
                   <TableCell class="tabular-nums">{{ fila.fila }}</TableCell>
                   <TableCell>
                     <p class="font-medium">{{ fila.datos?.nombre ?? 'Sin datos' }}</p>
-                    <p class="text-muted-foreground text-xs">{{ fila.datos?.carnet }}</p>
+                    <p class="text-muted-foreground text-xs">{{ fila.datos?.carnet || '-' }}</p>
                   </TableCell>
                   <TableCell>
                     <Badge :variant="estadoFila(fila).variante">
-                      <CheckCircle2Icon
-                        v-if="fila.errores.length === 0 && !fila.omision"
-                        class="size-3"
-                      />
-                      <XCircleIcon v-else-if="fila.errores.length > 0" class="size-3" />
+                      <XCircleIcon v-if="fila.errores.length > 0" class="size-3" />
                       {{ estadoFila(fila).etiqueta }}
                     </Badge>
                   </TableCell>
@@ -289,8 +282,7 @@ function estadoFila(fila: FilaImportacionEstudiante): {
           </div>
 
           <p v-if="filasOcultas" class="text-muted-foreground text-xs">
-            Se muestran las primeras {{ filasVisibles.length }} filas; hay
-            {{ filasOcultas }} más.
+            Se muestran las primeras {{ filasVisibles.length }} incidencias; hay {{ filasOcultas }} más.
           </p>
         </template>
       </div>
@@ -306,7 +298,7 @@ function estadoFila(fila: FilaImportacionEstudiante): {
         >
           <LoaderCircleIcon v-if="importando" class="animate-spin" />
           <UploadIcon v-else />
-          Importar {{ estudiantesValidos.length }} estudiantes
+          Importar estudiantes
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   BloquearInput,
   ConfirmarInput,
   EjecutarInput,
@@ -16,10 +16,12 @@ import type {
   RestriccionLeer,
 } from '@/types/alojamiento'
 import { apiErrorMessage, apiFetch, apiJson } from '@/lib/api'
+import type { ApiFetchOptions } from '@/lib/api'
 import { toCamelObject, toSnakeObject } from '@/lib/case'
 import type { AlojamientoRepository } from './contracts'
 
 const API = '/api/v1'
+const EJECUCION_TIMEOUT_MS = 180000
 
 class ErrorHttp extends Error {
   readonly status: number
@@ -38,7 +40,7 @@ function aCuerpo(value: unknown): string {
   return JSON.stringify(toSnakeObject(value as Record<string, unknown>))
 }
 
-async function solicitarApi<T>(path: string, init?: RequestInit): Promise<T> {
+async function solicitarApi<T>(path: string, init?: ApiFetchOptions): Promise<T> {
   const response = await apiFetch(`${API}${path}`, init)
 
   if (!response.ok) {
@@ -48,7 +50,7 @@ async function solicitarApi<T>(path: string, init?: RequestInit): Promise<T> {
   return apiJson<T>(response)
 }
 
-async function solicitarApiVoid(path: string, init?: RequestInit): Promise<void> {
+async function solicitarApiVoid(path: string, init?: ApiFetchOptions): Promise<void> {
   const response = await apiFetch(`${API}${path}`, init)
 
   if (!response.ok) {
@@ -120,6 +122,7 @@ export class HttpAlojamientoRepository implements AlojamientoRepository {
       await solicitarApi<unknown>(`/procesos-alojamiento/${procesoId}/ejecutar`, {
         method: 'POST',
         body: input ? aCuerpo(input) : undefined,
+        timeoutMs: EJECUCION_TIMEOUT_MS,
       }),
     )
   }

@@ -158,7 +158,6 @@ onMounted(cargarEdificios)
             <SelectValue placeholder="Seleccionar edificio..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Seleccionar edificio...</SelectItem>
             <SelectItem
               v-for="e in edificios"
               :key="e.id"

@@ -146,6 +146,7 @@ describe('HttpEstudiantesRepository', () => {
         .mockResolvedValueOnce(new Response(JSON.stringify(mockCatalogos.facultades), { status: 200 }))
         .mockResolvedValueOnce(new Response(JSON.stringify(mockCatalogos.especialidades), { status: 200 }))
         .mockResolvedValueOnce(new Response(JSON.stringify(mockCatalogos.militancias), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(mockCatalogos.tiposIngreso), { status: 200 }))
         .mockResolvedValueOnce(new Response(JSON.stringify({ estudiante: creado }), { status: 200 }))
 
       const repo = new HttpEstudiantesRepository()

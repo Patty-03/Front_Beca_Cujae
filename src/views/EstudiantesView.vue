@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { EdificioResumen } from '@/types/infraestructura'
-import type { EstudianteResumen, ResultadoImportacion } from '@/types/estudiante'
+import type { EstudianteResumen } from '@/types/estudiante'
 import { computed, onErrorCaptured, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -215,11 +215,7 @@ function abrirExpediente(estudiante: EstudianteResumen) {
   expedienteAbierto.value = true
 }
 
-function alImportar(resultado: ResultadoImportacion) {
-  toast.success('Listado actualizado', {
-    description: `${resultado.resumen.validas} estudiantes nuevos disponibles.`,
-  })
-  importarAbierto.value = false
+function alImportar() {
   void cargar()
 }
 

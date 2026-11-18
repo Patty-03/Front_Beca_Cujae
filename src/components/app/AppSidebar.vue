@@ -87,7 +87,6 @@ const navigation: NavGroup[] = [
         label: 'Planificación de deberes',
         to: '/planificacion-deberes',
         icon: CalendarIcon,
-        exact: true,
         permission: 'planificacion:read',
       },
       {

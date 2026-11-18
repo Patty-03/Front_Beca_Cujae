@@ -58,7 +58,17 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ['planificacion:read'],
-            title: 'Planificación de deberes',
+            title: 'PlanificaciA3n de deberes',
+          },
+        },
+        {
+          path: 'planificacion-deberes/:periodoId',
+          name: 'planificacion-periodo',
+          component: () => import('@/views/PlanificacionPeriodoView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['planificacion:read'],
+            title: 'Período de planificación',
           },
         },
         {
@@ -69,6 +79,16 @@ const router = createRouter({
             requiresAuth: true,
             permissions: ['alojamiento:read'],
             title: 'Asignación de cuartos',
+          },
+        },
+        {
+          path: 'asignacion-cuartos/:procesoId',
+          name: 'asignacion-cuartos-proceso',
+          component: () => import('@/views/AsignacionProcesoView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['alojamiento:read'],
+            title: 'Proceso de asignación',
           },
         },
         {
