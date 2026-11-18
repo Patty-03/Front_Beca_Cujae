@@ -48,14 +48,27 @@ const router = createRouter({
         },
         {
           path: 'deberes',
-          name: 'deberes',
-          component: () => import('@/views/ModuloPlaceholderView.vue'),
+          redirect: { name: 'planificacion-deberes' },
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'planificacion-deberes',
+          name: 'planificacion-deberes',
+          component: () => import('@/views/PlanificacionDeberesView.vue'),
           meta: {
             requiresAuth: true,
-            permissions: ['deberes:read'],
-            title: 'Deberes',
-            description:
-              'AquÃ­ podrÃ¡s gestionar las tareas y responsabilidades de los estudiantes de la residencia.',
+            permissions: ['planificacion:read'],
+            title: 'Planificación de deberes',
+          },
+        },
+        {
+          path: 'asignacion-cuartos',
+          name: 'asignacion-cuartos',
+          component: () => import('@/views/AsignacionCuartosView.vue'),
+          meta: {
+            requiresAuth: true,
+            permissions: ['alojamiento:read'],
+            title: 'Asignación de cuartos',
           },
         },
         {

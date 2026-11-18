@@ -3,10 +3,10 @@ import type { Component } from 'vue'
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
+  BedDoubleIcon,
   Building2Icon,
   ChevronsUpDownIcon,
   ClipboardCheckIcon,
-  ClipboardListIcon,
   GraduationCapIcon,
   HouseIcon,
   LogOutIcon,
@@ -81,6 +81,25 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    label: 'Planificación',
+    items: [
+      {
+        label: 'Planificación de deberes',
+        to: '/planificacion-deberes',
+        icon: CalendarIcon,
+        exact: true,
+        permission: 'planificacion:read',
+      },
+      {
+        label: 'Asignación de cuartos',
+        to: '/asignacion-cuartos',
+        icon: BedDoubleIcon,
+        exact: true,
+        permission: 'alojamiento:read',
+      },
+    ],
+  },
+  {
     label: 'Módulos',
     items: [
       {
@@ -94,13 +113,6 @@ const navigation: NavGroup[] = [
           { label: 'Edificios', to: '/infraestructura/edificios' },
           { label: 'Inventario de medios', to: '/infraestructura/inventario' },
         ],
-      },
-      {
-        label: 'Deberes',
-        to: '/deberes',
-        icon: ClipboardListIcon,
-        exact: true,
-        permission: 'deberes:read',
       },
       {
         label: 'Estudiantes',

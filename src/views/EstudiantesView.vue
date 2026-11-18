@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { EdificioResumen } from '@/types/infraestructura'
-import type { EstudianteResumen, ResultadoImportacion, AsignarCuartosMasivosResultado } from '@/types/estudiante'
+import type { EstudianteResumen, ResultadoImportacion } from '@/types/estudiante'
 import { computed, onErrorCaptured, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   BedDoubleIcon,
   CircleAlertIcon,
@@ -28,7 +29,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import ConfirmDialog from '@/components/infraestructura/ConfirmDialog.vue'
 import AsignarCuartoDialog from '@/components/estudiantes/AsignarCuartoDialog.vue'
-import AsignarCuartosMasivosDialog from '@/components/estudiantes/AsignarCuartosMasivosDialog.vue'
 import EstudianteDetalleDialog from '@/components/estudiantes/EstudianteDetalleDialog.vue'
 import EstudianteTable from '@/components/estudiantes/EstudianteTable.vue'
 import ImportarEstudiantesDialog from '@/components/estudiantes/ImportarEstudiantesDialog.vue'
@@ -43,10 +43,11 @@ import {
 } from '@/lib/estudiantes'
 import { formatNumber } from '@/lib/format'
 import { obtenerEdificios } from '@/services/infraestructura'
-import { eliminarEstudiante, obtenerEstudiantes, asignarCuartosMasivamente } from '@/services/estudiantes'
+import { eliminarEstudiante, obtenerEstudiantes } from '@/services/estudiantes'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
+const router = useRouter()
 const puedeEscribir = computed(() => auth.can('estudiantes:write'))
 
 const estudiantes = ref<EstudianteResumen[]>([])
@@ -62,8 +63,6 @@ const tipoFiltro = ref('todos')
 const estadoFiltro = ref('todos')
 
 const importarAbierto = ref(false)
-const asignacionMasivaAbierta = ref(false)
-const estudiantesParaAsignarMasivo = ref<EstudianteResumen[]>([])
 const detalleAbierto = ref(false)
 const asignarAbierto = ref(false)
 const expedienteAbierto = ref(false)
@@ -229,36 +228,8 @@ function alAsignar() {
   void cargar()
 }
 
-async function asignarCuartosMasivos() {
-  const sinCuarto = estudiantes.value.filter((e) => !e.asignacion)
-  if (sinCuarto.length === 0) {
-    toast.info('Todos los estudiantes ya tienen cuarto asignado.')
-    return
-  }
-  estudiantesParaAsignarMasivo.value = sinCuarto
-  asignacionMasivaAbierta.value = true
-}
-
-function alAsignarMasivo(resultado: AsignarCuartosMasivosResultado) {
-  asignacionMasivaAbierta.value = false
-  const exitosos = resultado.detalles.filter((d) => d.exitoso).length
-  const fallidos = resultado.detalles.filter((d) => !d.exitoso).length
-
-  if (fallidos > 0) {
-    const errores = resultado.detalles
-      .filter((d) => !d.exitoso)
-      .map((d) => d.error)
-      .filter(Boolean)
-      .join('; ')
-    toast.warning('Asignación parcial', {
-      description: `${exitosos} asignados, ${fallidos} fallidos.${errores ? ' Errores: ' + errores : ''}`,
-    })
-  } else {
-    toast.success('Cuartos asignados', {
-      description: `Se asignaron ${exitosos} cuartos correctamente.`,
-    })
-  }
-  void cargar()
+function irAAsignacionCuartos() {
+  void router.push('/asignacion-cuartos')
 }
 
 onMounted(cargar)
@@ -283,7 +254,7 @@ onErrorCaptured((err, _, info) => {
           <FileUpIcon />
           Importar estudiantes
         </Button>
-        <Button @click="asignarCuartosMasivos">
+        <Button @click="irAAsignacionCuartos">
           <BedDoubleIcon />
           Asignar Cuartos
         </Button>
@@ -488,12 +459,6 @@ onErrorCaptured((err, _, info) => {
       v-model:open="importarAbierto"
       :carnets-existentes="carnetsExistentes"
       @importado="alImportar"
-    />
-
-    <AsignarCuartosMasivosDialog
-      v-model:open="asignacionMasivaAbierta"
-      :estudiantes="estudiantesParaAsignarMasivo"
-      @asignados="alAsignarMasivo"
     />
 
     <EstudianteDetalleDialog

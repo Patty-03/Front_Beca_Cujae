@@ -5,6 +5,10 @@ export const ROLES: Role[] = ['estudiante', 'operador', 'administrador']
 export const PERMISSIONS: Permission[] = [
   'infraestructura:read',
   'infraestructura:write',
+  'alojamiento:read',
+  'alojamiento:write',
+  'planificacion:read',
+  'planificacion:write',
   'deberes:read',
   'estudiantes:read',
   'estudiantes:write',

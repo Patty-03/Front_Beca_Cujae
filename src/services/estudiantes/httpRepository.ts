@@ -345,7 +345,7 @@ function aEstudianteResumenDesdeLista(back: unknown, catalogos: Catalogos): Estu
     tipoIngreso: tipoIngresoDesdePais(pais),
     estadoBeca: estadoBecaDesdeActivo(c.activo),
     telefono: '',
-    asignacion: null,
+    asignacion: aAsignacion(c.cuartoActual),
     deberesPendientes: 0,
     deberesIncumplidos: 0,
   }
@@ -554,25 +554,40 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
       filtros,
     )
 
-    if (filtros.edificioId != null) {
-      const [detalles, arbol] = await Promise.all([
-        Promise.all(
-          estudiantes.map((estudiante) => solicitarJson<Record<string, unknown>>(`/${estudiante.id}`)),
+    if (estudiantes.length) {
+      const detalles = await Promise.all(
+        estudiantes.map((estudiante) =>
+          solicitarJson<Record<string, unknown>>(`/${estudiante.id}`).catch(() => null),
         ),
-        solicitarApi<Array<{ id: number; nombre: string }>>('/estructura/arbol'),
-      ])
-      const idsPorNombre = new Map(
-        arbol.map((edificio) => [normalizarClave(edificio.nombre), edificio.id]),
       )
-      const ids = new Set(
-        detalles.flatMap((detalle) => {
-          const resumen = aEstudianteResumenDesdeDetalle(detalle)
-          if (!resumen.asignacion) return []
-          const id = idsPorNombre.get(normalizarClave(resumen.asignacion.edificioNombre))
-          return id != null && id === filtros.edificioId ? [resumen.id] : []
-        }),
-      )
-      estudiantes = estudiantes.filter((estudiante) => ids.has(estudiante.id))
+      const detalleMap = new Map<number, EstudianteResumen>()
+      detalles.forEach((detalle, i) => {
+        const base = estudiantes[i]
+        if (detalle && base) detalleMap.set(base.id, aEstudianteResumenDesdeDetalle(detalle))
+      })
+      estudiantes = estudiantes.map((est) => {
+        const det = detalleMap.get(est.id)
+        if (!det) return est
+        return {
+          ...est,
+          asignacion: det.asignacion ?? est.asignacion,
+          provincia: det.provincia || est.provincia,
+          municipio: det.municipio || est.municipio,
+          telefono: det.telefono || est.telefono,
+        }
+      })
+
+      if (filtros.edificioId != null) {
+        const arbol = await solicitarApi<Array<{ id: number; nombre: string }>>('/estructura/arbol')
+        const idsPorNombre = new Map(
+          arbol.map((edificio) => [normalizarClave(edificio.nombre), edificio.id]),
+        )
+        estudiantes = estudiantes.filter((est) => {
+          if (!est.asignacion) return false
+          const id = idsPorNombre.get(normalizarClave(est.asignacion.edificioNombre))
+          return id != null && id === filtros.edificioId
+        })
+      }
     }
 
     return estudiantes

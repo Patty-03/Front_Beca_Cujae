@@ -17,6 +17,22 @@ const PERMISO_BACK_TO_FRONT: Record<string, Permission[]> = {
   SOLMED_CREAR: ['solicitudes-medios:crear'],
   SOLMED_CONSULTAR: ['solicitudes-medios:read'],
   SOLMED_APROBAR: ['solicitudes-medios:aprobar'],
+  REG_CONSULTAR: ['alojamiento:read', 'planificacion:read'],
+  REG_GESTIONAR_CONJUNTOS: ['alojamiento:write', 'planificacion:write'],
+  ALOJ_CONSULTAR: ['alojamiento:read'],
+  ALOJ_CREAR_PROCESO: ['alojamiento:write'],
+  ALOJ_EJECUTAR_PROCESO: ['alojamiento:write'],
+  ALOJ_AJUSTAR_PREASIGNACION: ['alojamiento:write'],
+  ALOJ_CONFIRMAR_PROCESO: ['alojamiento:write'],
+  DEB_CONSULTAR: ['planificacion:read'],
+  DEB_CREAR_PERIODO: ['planificacion:write'],
+  DEB_GENERAR_PLANIFICACION: ['planificacion:write'],
+  DEB_PUBLICAR_PERIODO: ['planificacion:write'],
+  DEB_REGISTRAR_CUMPLIMIENTO: ['planificacion:write'],
+  DEB_CANCELAR_OCURRENCIA: ['planificacion:write'],
+  DEB_GESTIONAR_TIPOS: ['planificacion:write'],
+  DEB_GESTIONAR_CONFIGURACION: ['planificacion:write'],
+  DEB_GESTIONAR_EXENCIONES: ['planificacion:write'],
 }
 
 function permisosFront(permisosBack: string[]): Permission[] {

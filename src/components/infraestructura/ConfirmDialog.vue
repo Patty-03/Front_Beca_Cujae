@@ -33,7 +33,9 @@ const emit = defineEmits<{ confirmar: [] }>()
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ props.titulo }}</DialogTitle>
-        <DialogDescription>{{ props.descripcion }}</DialogDescription>
+        <DialogDescription>
+        <slot name="description">{{ props.descripcion }}</slot>
+      </DialogDescription>
       </DialogHeader>
 
       <DialogFooter>
