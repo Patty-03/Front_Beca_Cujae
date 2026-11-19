@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import AppHeader from '@/components/app/AppHeader.vue'
 import AppSidebar from '@/components/app/AppSidebar.vue'
-import DemoModeBanner from '@/components/app/DemoModeBanner.vue'
-import InsecureContextBanner from '@/components/app/InsecureContextBanner.vue'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 </script>
 
@@ -18,8 +16,6 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
     <SidebarInset id="contenido-principal" tabindex="-1">
       <AppHeader />
       <div class="flex flex-1 flex-col gap-6 p-4 md:p-6">
-        <InsecureContextBanner />
-        <DemoModeBanner />
         <RouterView />
       </div>
     </SidebarInset>

@@ -15,8 +15,6 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import DemoModeBanner from '@/components/app/DemoModeBanner.vue'
-import InsecureContextBanner from '@/components/app/InsecureContextBanner.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -34,9 +32,7 @@ async function handleSubmit() {
   try {
     await auth.login(usuario.value, password.value, remember.value)
     toast.success('Bienvenido a CUJAE Residencia', {
-      description: auth.isDemo
-        ? 'Sesión demo iniciada. No se conservará al recargar.'
-        : 'Sesión iniciada correctamente.',
+      description: 'Sesión iniciada correctamente.',
     })
 
     const redirect =
@@ -80,9 +76,6 @@ async function handleSubmit() {
     <main
       class="border-brand-border m-auto flex w-full max-w-sm flex-col rounded-2xl border bg-white p-6 shadow-xl"
     >
-      <InsecureContextBanner class="mb-4" />
-      <DemoModeBanner class="mb-4" />
-
       <p
         v-if="auth.sessionError"
         role="alert"
@@ -170,15 +163,10 @@ async function handleSubmit() {
             <input
               v-model="remember"
               type="checkbox"
-              :disabled="auth.isDemo"
-              :title="auth.isDemo ? 'No disponible en modo demo' : undefined"
               class="accent-brand-primary focus:ring-brand-primary size-4 rounded border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <span class="text-xs text-slate-600">Mantener sesión iniciada</span>
           </label>
-          <p v-if="auth.isDemo" class="text-muted-foreground pl-6 text-[11px]">
-            El modo demo no conserva la sesión al recargar.
-          </p>
         </div>
 
         <Button
