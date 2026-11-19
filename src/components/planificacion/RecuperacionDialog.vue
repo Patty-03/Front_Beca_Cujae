@@ -91,8 +91,8 @@ async function guardar() {
       <DialogHeader>
         <DialogTitle>Recuperar deber</DialogTitle>
         <DialogDescription>
-          La recuperación crea una asignación nueva en una ocurrencia futura del mismo tipo
-          de deber. La deuda original queda cubierta.
+          La recuperación crea una asignación nueva en una ocurrencia futura del mismo tipo de
+          deber. La deuda original queda cubierta.
         </DialogDescription>
       </DialogHeader>
 
@@ -112,7 +112,7 @@ async function guardar() {
 
       <div v-if="cargando" class="text-muted-foreground flex items-center gap-2 text-sm">
         <LoaderCircleIcon class="animate-spin" />
-        Buscando ocurrencias disponibles…
+        Buscando ocurrencias disponibles...
       </div>
 
       <div v-else class="space-y-1.5">
@@ -127,8 +127,9 @@ async function guardar() {
               :key="ocurrencia.id"
               :value="ocurrencia.id"
             >
-              {{ formatDate(ocurrencia.fecha) }} · {{ ocurrencia.configuracion }}
-              ({{ ocurrencia.asignados }}/{{ ocurrencia.cantPersonas ?? '∞' }})
+              {{ formatDate(ocurrencia.fecha) }} · {{ ocurrencia.configuracion }} ({{
+                ocurrencia.asignados
+              }}/{{ ocurrencia.cantPersonas ?? '∞' }})
             </SelectItem>
           </SelectContent>
         </Select>

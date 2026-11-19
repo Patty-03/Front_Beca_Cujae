@@ -2,13 +2,17 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   reporter: 'html',
+  outputDir: 'video/playwright-artifacts',
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    screenshot: 'on',
+    video: {
+      mode: 'on',
+      size: { width: 1280, height: 720 },
+    },
   },
   projects: [
     {

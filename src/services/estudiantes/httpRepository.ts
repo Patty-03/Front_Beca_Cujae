@@ -518,7 +518,7 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
       async (p) => {
         const creado = await solicitarJson<Record<string, unknown>>('', { method: 'POST', body: JSON.stringify(p.cuerpo) })
         const estudiante = creado.estudiante as Record<string, unknown> | undefined
-        if (!estudiante) throw new Error('El backend no devolvi� el estudiante creado.')
+        if (!estudiante) throw new Error('El backend no devolvió el estudiante creado.')
         if (p.datos.estadoBeca === 'baja') {
           await solicitarJson<Record<string, unknown>>(
             `/${estudiante.id}`,

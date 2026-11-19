@@ -85,7 +85,7 @@ function varianteEstadoDeber(estado: EstadoDeber) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-3xl">
+    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-4xl lg:max-w-5xl">
       <DialogHeader>
         <DialogTitle>Ficha del estudiante</DialogTitle>
         <DialogDescription>

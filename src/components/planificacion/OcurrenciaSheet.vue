@@ -316,9 +316,13 @@ async function alRecuperar() {
 <template>
   <Sheet v-model:open="open">
     <SheetContent class="w-full overflow-y-auto sm:max-w-2xl">
-      <SheetHeader>
+      <SheetHeader class="pr-12">
         <SheetTitle>
-          {{ ocurrencia ? `${ocurrencia.tipoDeber} · ${formatDate(ocurrencia.fecha)}` : 'Ocurrencia' }}
+          {{
+            ocurrencia
+              ? `${ocurrencia.tipoDeber} · ${formatDate(ocurrencia.fecha)}`
+              : 'Ocurrencia'
+          }}
         </SheetTitle>
         <SheetDescription>
           <template v-if="ocurrencia">
@@ -329,7 +333,7 @@ async function alRecuperar() {
         </SheetDescription>
       </SheetHeader>
 
-      <div v-if="ocurrencia" class="space-y-4">
+      <div v-if="ocurrencia" class="space-y-4 px-4 pb-6">
         <div class="flex flex-wrap items-center gap-2">
           <Badge :variant="ocurrencia.cancelada ? 'destructive' : 'secondary'">
             {{ ocurrencia.cancelada ? 'Cancelada' : 'Activa' }}
@@ -367,12 +371,13 @@ async function alRecuperar() {
         </Alert>
 
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h4 class="text-sm font-semibold">Asignaciones</h4>
             <Button
               v-if="!ocurrencia.cancelada"
               variant="ghost"
               size="sm"
+              class="w-full sm:w-auto"
               :disabled="cerrado"
               @click="cancelarAbierto = true"
             >
@@ -383,6 +388,7 @@ async function alRecuperar() {
               v-else
               variant="outline"
               size="sm"
+              class="w-full sm:w-auto"
               :disabled="cerrado"
               @click="reactivar"
             >
@@ -393,10 +399,13 @@ async function alRecuperar() {
 
           <div v-if="cargando" class="text-muted-foreground flex items-center gap-2 py-4 text-sm">
             <LoaderCircleIcon class="animate-spin" />
-            Cargando asignaciones…
+            Cargando asignaciones...
           </div>
 
-          <div v-else-if="asignaciones.length === 0" class="text-muted-foreground rounded-md border py-6 text-center text-sm">
+          <div
+            v-else-if="asignaciones.length === 0"
+            class="text-muted-foreground rounded-md border py-6 text-center text-sm"
+          >
             No hay estudiantes asignados a esta ocurrencia.
           </div>
 
@@ -404,10 +413,10 @@ async function alRecuperar() {
             <div
               v-for="asignacion in asignaciones"
               :key="asignacion.id"
-              class="space-y-2 px-3 py-2.5"
+              class="space-y-3 px-3 py-3"
             >
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="min-w-0">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0 flex-1">
                   <div class="truncate text-sm font-medium">{{ asignacion.estudiante }}</div>
                   <div class="text-muted-foreground text-xs">
                     {{ asignacion.puntosCarga }} punto(s)
@@ -416,7 +425,7 @@ async function alRecuperar() {
                     </span>
                   </div>
                 </div>
-                <div class="flex items-center gap-1">
+                <div class="flex flex-wrap items-center gap-1 sm:justify-end">
                   <Badge :variant="varianteEstadoAsignacion(asignacion.estado)">
                     {{ etiquetaEstadoAsignacion(asignacion.estado) }}
                   </Badge>
@@ -441,7 +450,7 @@ async function alRecuperar() {
                 </div>
               </div>
 
-              <div class="flex flex-wrap items-center gap-2">
+              <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 <template v-if="asignacion.estado === 'PERMUTADA'">
                   <span class="text-muted-foreground text-xs">
                     Permutada: no se puede modificar el cumplimiento.
@@ -449,7 +458,7 @@ async function alRecuperar() {
                 </template>
                 <template v-else>
                   <Select v-model="estados[asignacion.id]" :disabled="cerrado">
-                    <SelectTrigger class="h-8 w-44">
+                    <SelectTrigger class="h-8 w-full sm:w-44">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -469,6 +478,7 @@ async function alRecuperar() {
                     "
                     variant="outline"
                     size="sm"
+                    class="w-full sm:w-auto"
                     :disabled="cerrado"
                     @click="abrirRecuperacion(asignacion)"
                   >
@@ -480,9 +490,10 @@ async function alRecuperar() {
             </div>
           </div>
 
-          <div class="flex justify-end">
+          <div class="flex sm:justify-end">
             <Button
               size="sm"
+              class="w-full sm:w-auto"
               :disabled="cerrado || !hayCambios || guardandoCumplimiento"
               @click="guardarCumplimiento"
             >
@@ -496,8 +507,13 @@ async function alRecuperar() {
         <div v-if="!ocurrencia.cancelada" class="space-y-2 rounded-md border p-3">
           <h4 class="text-sm font-semibold">Asignar estudiante</h4>
 
-          <div v-if="estudianteSeleccionado" class="flex items-center justify-between rounded-md border px-2.5 py-2">
-            <span class="text-sm font-medium">{{ estudianteSeleccionado.nombre }}</span>
+          <div
+            v-if="estudianteSeleccionado"
+            class="flex items-center justify-between gap-2 rounded-md border px-2.5 py-2"
+          >
+            <span class="min-w-0 truncate text-sm font-medium">{{
+              estudianteSeleccionado.nombre
+            }}</span>
             <Button
               variant="ghost"
               size="icon-sm"
@@ -520,7 +536,7 @@ async function alRecuperar() {
                 :disabled="cerrado"
               />
             </div>
-            <div v-if="buscando" class="text-muted-foreground text-xs">Buscando…</div>
+            <div v-if="buscando" class="text-muted-foreground text-xs">Buscando...</div>
             <div v-else-if="resultados.length" class="rounded-md border">
               <button
                 v-for="estudiante in resultados"
@@ -529,8 +545,10 @@ async function alRecuperar() {
                 class="hover:bg-muted flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left text-sm"
                 @click="seleccionarEstudiante(estudiante)"
               >
-                <span class="truncate">{{ estudiante.nombre }}</span>
-                <span class="text-muted-foreground text-xs">{{ estudiante.carnet }}</span>
+                <span class="min-w-0 truncate">{{ estudiante.nombre }}</span>
+                <span class="text-muted-foreground shrink-0 text-xs">{{
+                  estudiante.carnet
+                }}</span>
               </button>
             </div>
           </div>
@@ -539,15 +557,16 @@ async function alRecuperar() {
             <input
               v-model="bloqueada"
               type="checkbox"
-              class="border-input size-4 rounded"
+              class="border-input size-4 shrink-0 rounded"
               :disabled="cerrado"
             />
             Bloquear la asignación (no se mueve al regenerar)
           </label>
 
-          <div class="flex justify-end">
+          <div class="flex sm:justify-end">
             <Button
               size="sm"
+              class="w-full sm:w-auto"
               :disabled="
                 cerrado ||
                 asignando ||
@@ -589,7 +608,7 @@ async function alRecuperar() {
             <Textarea
               id="motivo-cancelacion"
               v-model="motivoCancelacion"
-              placeholder="Feriado, actividad extraordinaria…"
+              placeholder="Feriado, actividad extraordinaria..."
             />
           </div>
           <DialogFooter>
