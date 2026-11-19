@@ -61,6 +61,7 @@ const mockCatalogos = {
   facultades: [{ id: 1, nombre: 'FII' }],
   especialidades: [{ id: 1, nombre: 'Ciencias Informáticas', facultad_id: 1 }],
   militancias: [{ id: 1, nombre: 'UJC' }],
+  tiposIngreso: [{ id: 1, nombre: 'Residente en provincia' }],
 }
 
 beforeEach(() => {
@@ -70,9 +71,12 @@ beforeEach(() => {
 describe('HttpEstudiantesRepository', () => {
   describe('obtenerEstudiantes', () => {
     it('devuelve lista de estudiantes resumen', async () => {
-      mockApiFetch.mockResolvedValue(
-        new Response(JSON.stringify([mockResumen]), { status: 200 }),
-      )
+      mockApiFetch.mockImplementation(async (url: string) => {
+        if (String(url).includes('/alojamientos/estudiantes')) {
+          return new Response(JSON.stringify([]), { status: 200 })
+        }
+        return new Response(JSON.stringify([mockResumen]), { status: 200 })
+      })
 
       const repo = new HttpEstudiantesRepository()
       const estudiantes = await repo.obtenerEstudiantes()
@@ -84,9 +88,12 @@ describe('HttpEstudiantesRepository', () => {
     })
 
     it('aplica filtros de carrera y estado de beca', async () => {
-      mockApiFetch.mockResolvedValue(
-        new Response(JSON.stringify([mockResumen]), { status: 200 }),
-      )
+      mockApiFetch.mockImplementation(async (url: string) => {
+        if (String(url).includes('/alojamientos/estudiantes')) {
+          return new Response(JSON.stringify([]), { status: 200 })
+        }
+        return new Response(JSON.stringify([mockResumen]), { status: 200 })
+      })
 
       const repo = new HttpEstudiantesRepository()
       await repo.obtenerEstudiantes({
@@ -98,9 +105,12 @@ describe('HttpEstudiantesRepository', () => {
     })
 
     it('lanza error cuando la API falla', async () => {
-      mockApiFetch.mockResolvedValue(
-        new Response('Error', { status: 500, statusText: 'Internal Server Error' }),
-      )
+      mockApiFetch.mockImplementation(async (url: string) => {
+        if (String(url).includes('/alojamientos/estudiantes')) {
+          return new Response(JSON.stringify([]), { status: 200 })
+        }
+        return new Response('Error', { status: 500, statusText: 'Internal Server Error' })
+      })
 
       const repo = new HttpEstudiantesRepository()
       await expect(repo.obtenerEstudiantes()).rejects.toThrow()

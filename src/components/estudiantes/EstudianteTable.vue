@@ -14,7 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ETIQUETAS_ESTADO_BECA, ETIQUETAS_TIPO_INGRESO } from '@/lib/estudiantes'
+import {
+  ETIQUETAS_ESTADO_BECA,
+  ETIQUETAS_TIPO_INGRESO,
+  etiquetaEstadoAlojamiento,
+  varianteEstadoAlojamiento,
+} from '@/lib/estudiantes'
 
 const props = defineProps<{
   estudiantes: EstudianteResumen[]
@@ -72,13 +77,17 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
               </p>
             </TableCell>
             <TableCell>
-              <div v-if="estudiante.asignacion">
-                <p class="font-medium">{{ estudiante.asignacion.cuartoNombre }}</p>
-                <p class="text-muted-foreground text-xs">
-                  {{ estudiante.asignacion.edificioNombre }}
-                </p>
+              <div class="space-y-1">
+                <Badge :variant="varianteEstadoAlojamiento(estudiante.estadoAlojamiento ?? (estudiante.asignacion ? 'VIGENTE' : 'NINGUNO'))">
+                  {{ etiquetaEstadoAlojamiento(estudiante.estadoAlojamiento ?? (estudiante.asignacion ? 'VIGENTE' : 'NINGUNO')) }}
+                </Badge>
+                <div v-if="estudiante.asignacion" class="min-w-0">
+                  <p class="font-medium">{{ estudiante.asignacion.cuartoNombre || estudiante.asignacion.cuartoId }}</p>
+                  <p class="text-muted-foreground text-xs">
+                    {{ estudiante.asignacion.edificioNombre }}
+                  </p>
+                </div>
               </div>
-              <Badge v-else variant="outline">Sin cuarto</Badge>
             </TableCell>
             <TableCell>
               <div class="flex flex-wrap gap-1">
@@ -172,12 +181,15 @@ function puedeAsignarA(estudiante: EstudianteResumen): boolean {
               {{ estudiante.anioAcademico }}.º año
               <span v-if="estudiante.grupo"> · {{ estudiante.grupo }}</span>
             </p>
-            <p v-if="estudiante.asignacion" class="flex items-center gap-1.5">
-              <BedDoubleIcon class="size-4" />
-              {{ estudiante.asignacion.cuartoNombre }} ·
-              {{ estudiante.asignacion.edificioNombre }}
-            </p>
-            <Badge v-else variant="outline" class="w-fit">Sin cuarto</Badge>
+            <div class="space-y-1">
+              <Badge :variant="varianteEstadoAlojamiento(estudiante.estadoAlojamiento ?? (estudiante.asignacion ? 'VIGENTE' : 'NINGUNO'))" class="w-fit">
+                {{ etiquetaEstadoAlojamiento(estudiante.estadoAlojamiento ?? (estudiante.asignacion ? 'VIGENTE' : 'NINGUNO')) }}
+              </Badge>
+              <p v-if="estudiante.asignacion" class="flex items-center gap-1.5">
+                <BedDoubleIcon class="size-4" />
+                {{ estudiante.asignacion.cuartoNombre }} · {{ estudiante.asignacion.edificioNombre }}
+              </p>
+            </div>
             <div class="flex flex-wrap gap-1">
               <Badge v-if="estudiante.deberesPendientes" variant="outline">
                 {{ estudiante.deberesPendientes }} deberes pendientes

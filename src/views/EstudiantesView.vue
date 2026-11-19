@@ -126,7 +126,11 @@ const hayFiltros = computed(
 )
 
 const totalAsignados = computed(
-  () => estudiantes.value.filter((estudiante) => estudiante.asignacion).length,
+  () =>
+    estudiantes.value.filter(
+      (estudiante) =>
+        estudiante.estadoAlojamiento === 'VIGENTE' || (!!estudiante.asignacion && estudiante.estadoAlojamiento !== 'NINGUNO'),
+    ).length,
 )
 const totalSinCuarto = computed(() => estudiantes.value.length - totalAsignados.value)
 const totalPendientes = computed(() =>
@@ -276,16 +280,16 @@ onErrorCaptured((err, _, info) => {
         :icon="UsersIcon"
       />
       <KpiCard
-        label="Con cuarto"
+        label="Con alojamiento"
         :value="formatNumber(totalAsignados)"
-        detail="Asignaciones activas"
+        detail="Alojamientos vigentes"
         :icon="BedDoubleIcon"
         tono="emerald"
       />
       <KpiCard
-        label="Sin cuarto"
+        label="Sin alojamiento"
         :value="formatNumber(totalSinCuarto)"
-        detail="Pendientes de asignación"
+        detail="Sin alojamiento vigente"
         :icon="HomeIcon"
         tono="amber"
       />

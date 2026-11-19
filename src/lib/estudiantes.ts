@@ -71,6 +71,23 @@ export const ETIQUETAS_ESTADO_DEBER: Record<EstadoDeber, string> = {
   incumplido: 'Incumplido',
 }
 
+export function etiquetaEstadoAlojamiento(estado?: string | null): string {
+  if (estado === 'VIGENTE') return 'Vigente'
+  if (!estado || estado === 'NINGUNO') return 'Sin alojamiento'
+  return estado
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase())
+}
+
+export function varianteEstadoAlojamiento(
+  estado?: string | null,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (estado === 'VIGENTE') return 'secondary'
+  if (!estado || estado === 'NINGUNO') return 'outline'
+  return 'secondary'
+}
+
 export function normalizarClave(value: string | null | undefined): string {
   if (value == null) return ''
   return String(value)

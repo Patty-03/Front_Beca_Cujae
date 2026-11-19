@@ -135,6 +135,16 @@ interface Catalogos {
   tiposIngreso: TipoIngresoBack[];
 }
 
+interface AlojamientoEstadoBack {
+  estudianteId: number
+  alojamientoId: number | null
+  cuartoId: number | null
+  cuarto: string | null
+  desde: string | null
+  hasta: string | null
+  estado: string
+}
+
 let catalogoCache: Promise<Catalogos> | null = null
 
 async function cargarUnCatalogo<T>(fn: () => Promise<T[]>): Promise<T[]> {
@@ -144,10 +154,10 @@ async function cargarUnCatalogo<T>(fn: () => Promise<T[]>): Promise<T[]> {
 async function cargarCatalogos(): Promise<Catalogos> {
   const sexos = await cargarUnCatalogo(() => solicitarApi<SexoBack[]>('/sexos'))
   const paises = await cargarUnCatalogo(() => solicitarLista<PaisBack>('/paises', API))
-  const provincias = await cargarUnCatalogo(() => solicitarApi<ProvinciaBack[]>('/provincias', API))
-  const municipios = await cargarUnCatalogo(() => solicitarApi<MunicipioBack[]>('/municipios', API))
+  const provincias = await cargarUnCatalogo(() => solicitarApi<ProvinciaBack[]>('/provincias'))
+  const municipios = await cargarUnCatalogo(() => solicitarApi<MunicipioBack[]>('/municipios'))
   const facultades = await cargarUnCatalogo(() => solicitarApi<FacultadBack[]>('/facultades'))
-  const especialidades = await cargarUnCatalogo(() => solicitarApi<EspecialidadBack[]>('/especialidades', API))
+  const especialidades = await cargarUnCatalogo(() => solicitarApi<EspecialidadBack[]>('/especialidades'))
   const militancias = await cargarUnCatalogo(() => solicitarApi<MilitanciaBack[]>('/militancias'))
   const tiposIngreso = await cargarUnCatalogo(() => solicitarApi<TipoIngresoBack[]>('/tipos-ingreso'))
   return { sexos, paises, provincias, municipios, facultades, especialidades, militancias, tiposIngreso }
@@ -182,22 +192,32 @@ function aAsignacion(back: unknown): AsignacionCuarto | null {
   const cuartoId = Number(c.cuartoId)
   if (!Number.isFinite(cuartoId) || cuartoId <= 0) return null
   return {
-    id: 0, edificioId: 0, edificioNombre: edificioNombre || 'Sin edificio', escaleraId: 0,
-    escaleraNombre: escaleraNombre || 'Sin escalera', cuartoId, cuartoNombre: cuartoNombre || '',
-    desde: String(c.desde ?? ''), llaveEntregada: false, llaveTaquillaEntregada: false,
+    id: Number(c.alojamientoId ?? c.id ?? 0),
+    edificioId: 0,
+    edificioNombre: edificioNombre || 'Sin edificio',
+    escaleraId: 0,
+    escaleraNombre: escaleraNombre || 'Sin escalera',
+    cuartoId,
+    cuartoNombre: cuartoNombre || '',
+    desde: String(c.desde ?? ''),
+    hasta: c.hasta != null ? String(c.hasta) : undefined,
+    llaveEntregada: false,
+    llaveTaquillaEntregada: false,
   }
 }
 
 function aEstudianteResumenDesdeLista(back: unknown, catalogos: Catalogos): EstudianteResumen {
   const c = toCamelObject(back as Record<string, unknown>)
   const pais = catalogos.paises.find((item) => item.id === Number(c.paisId))
+  const asignacion = aAsignacion(c.cuartoActual)
   return {
     id: Number(c.id), carnet: String(c.carnetDeIdentidad ?? c.pasaporte ?? ''), nombre: String(c.nombre ?? ''),
     sexo: sexoDesdeId(Number(c.sexoId), catalogos), provincia: '', municipio: '',
     facultad: String(c.facultad ?? ''), carrera: String(c.especialidad ?? ''), especialidad: String(c.especialidad ?? ''),
     anioAcademico: Number(c.anioAcademico ?? 0), grupo: c.grupo != null ? String(c.grupo) : undefined,
     tipoIngreso: tipoIngresoDesdePais(pais), estadoBeca: estadoBecaDesdeActivo(c.activo),
-    telefono: '', asignacion: aAsignacion(c.cuartoActual), deberesPendientes: 0, deberesIncumplidos: 0,
+    telefono: '', asignacion, estadoAlojamiento: asignacion ? 'VIGENTE' : 'NINGUNO',
+    deberesPendientes: 0, deberesIncumplidos: 0,
   }
 }
 
@@ -209,6 +229,7 @@ function aEstudianteResumenDesdeDetalle(back: unknown): EstudianteResumen {
   const provincia = municipio?.provincia as Record<string, unknown> | undefined
   const especialidad = c.especialidad as Record<string, unknown> | undefined
   const facultad = especialidad?.facultad as Record<string, unknown> | undefined
+  const asignacion = aAsignacion(c.cuartoActual)
   return {
     id: Number(c.id), carnet: String(c.carnetDeIdentidad ?? c.pasaporte ?? ''), nombre: String(c.nombre ?? ''),
     sexo: sexoDesdeNombre(sexo?.nombre != null ? String(sexo.nombre) : undefined),
@@ -220,7 +241,8 @@ function aEstudianteResumenDesdeDetalle(back: unknown): EstudianteResumen {
     anioAcademico: Number(c.anioAcademico ?? 0), grupo: c.grupo != null ? String(c.grupo) : undefined,
     tipoIngreso: tipoIngresoDesdePais(pais ? { id: Number(pais.id), nombre: String(pais.nombre ?? ''), iso2: String(pais.iso2 ?? '') } : undefined),
     estadoBeca: estadoBecaDesdeActivo(c.activo), telefono: String(c.telefono ?? ''),
-    asignacion: aAsignacion(c.cuartoActual), deberesPendientes: 0, deberesIncumplidos: 0,
+    asignacion, estadoAlojamiento: asignacion ? 'VIGENTE' : 'NINGUNO',
+    deberesPendientes: 0, deberesIncumplidos: 0,
   }
 }
 
@@ -379,9 +401,10 @@ async function procesarEnParalelo<T, R>(
   async function worker() {
     while (indice < items.length) {
       const i = indice++
+      const item = items[i]!
       activos++
       try {
-        resultados[i] = await procesar(items[i], i)
+        resultados[i] = await procesar(item, i)
       } catch (e) {
         resultados[i] = { error: e instanceof Error ? e : new Error(String(e)) }
       } finally {
@@ -399,8 +422,46 @@ async function procesarEnParalelo<T, R>(
 
 export class HttpEstudiantesRepository implements EstudiantesRepository {
   async obtenerEstudiantes(filtros: FiltrosEstudiante = {}): Promise<EstudianteResumen[]> {
-    const [datos, catalogos] = await Promise.all([solicitarLista<Record<string, unknown>>(''), cargarCatalogos()])
-    return filtrarClientSide(datos.map((dato) => aEstudianteResumenDesdeLista(dato, catalogos)), filtros)
+    const [datos, catalogos] = await Promise.all([
+      solicitarLista<Record<string, unknown>>(''),
+      cargarCatalogos(),
+    ])
+    let estados: AlojamientoEstadoBack[] = []
+    try {
+      const crudos: Record<string, unknown>[] = []
+      for (let offset = 0; ; offset += TAMANO_PAGINA) {
+        const pagina = await solicitarApi<Record<string, unknown>[]>(
+          `/alojamientos/estudiantes?limit=${TAMANO_PAGINA}&offset=${offset}`,
+        )
+        crudos.push(...pagina)
+        if (pagina.length < TAMANO_PAGINA) break
+      }
+      estados = crudos.map((e) => toCamelObject(e) as AlojamientoEstadoBack)
+    } catch {
+      estados = []
+    }
+    const mapaEstados = new Map(estados.map((e) => [Number(e.estudianteId), e]))
+    const estudiantes = datos.map((dato) => {
+      const base = aEstudianteResumenDesdeLista(dato, catalogos)
+      const estado = mapaEstados.get(base.id)
+      if (!estado) return base
+      const vigente = estado.estado === 'VIGENTE' && !!estado.cuarto && !!estado.cuartoId
+      const asignacion = vigente
+        ? aAsignacion({
+            alojamientoId: estado.alojamientoId,
+            cuartoId: estado.cuartoId,
+            nombreCompleto: estado.cuarto,
+            desde: estado.desde,
+            hasta: estado.hasta,
+          })
+        : null
+      return {
+        ...base,
+        asignacion,
+        estadoAlojamiento: estado.estado || (asignacion ? 'VIGENTE' : 'NINGUNO'),
+      }
+    })
+    return filtrarClientSide(estudiantes, filtros)
   }
 
   async obtenerEstudiante(id: number): Promise<Estudiante> {
@@ -437,9 +498,10 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
           preparados.push({ tipo: 'omitido', datos })
           omitidas++
         } else {
-          preparados.push({ tipo: 'rechazado', datos, error: caught instanceof Error ? caught.message : String(caught) })
+          const error = caught instanceof Error ? caught.message : String(caught)
+          preparados.push({ tipo: 'rechazado', datos, error })
           rechazadas++
-          if (!primerError) primerError = preparados[preparados.length - 1]!.error
+          if (!primerError) primerError = error
         }
       }
     }
@@ -474,12 +536,11 @@ export class HttpEstudiantesRepository implements EstudiantesRepository {
         if (!primerError) primerError = resultado.error.message
       } else {
         importadas.push(resultado)
-
+      }
     }
 
-    return { resumen: { total: importados.length, validas: importadas.length, omitidas, rechazadas }, importadas, primerError }
+    return { resumen: { total: importados.length, validas: importadas.length, omitidas, rechazadas }, importadas, primerError: primerError ?? undefined }
   }
-}
 
   async sugerirCuartos(estudianteId: number): Promise<SugerenciaCuarto[]> {
     const estudiante = await this.obtenerEstudiante(estudianteId)

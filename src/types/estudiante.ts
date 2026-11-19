@@ -59,6 +59,7 @@ export interface EstudianteResumen {
   estadoBeca: EstadoBeca
   telefono: string
   asignacion: AsignacionCuarto | null
+  estadoAlojamiento?: string
   deberesPendientes: number
   deberesIncumplidos: number
 }

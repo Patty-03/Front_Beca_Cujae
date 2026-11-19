@@ -103,6 +103,7 @@ function deberesDe(estudianteId: number): DeberEstudiante[] {
 
 function resumenDe(registro: EstudianteRecord): EstudianteResumen {
   const deberes = deberesDe(registro.id)
+  const asignacion = asignacionDe(registro.id)
 
   return {
     id: registro.id,
@@ -119,7 +120,8 @@ function resumenDe(registro: EstudianteRecord): EstudianteResumen {
     tipoIngreso: registro.tipoIngreso,
     estadoBeca: registro.estadoBeca,
     telefono: registro.telefono,
-    asignacion: asignacionDe(registro.id),
+    asignacion,
+    estadoAlojamiento: asignacion ? 'VIGENTE' : 'NINGUNO',
     deberesPendientes: deberes.filter((deber) => deber.estado === 'pendiente').length,
     deberesIncumplidos: deberes.filter((deber) => deber.estado === 'incumplido').length,
   }
