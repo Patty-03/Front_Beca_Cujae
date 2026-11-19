@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { toast } from 'vue-sonner'
 import type { Permission, Role } from '@/types/auth'
 import { useAuthStore } from '@/stores/auth'
 
@@ -58,7 +59,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ['planificacion:read'],
-            title: 'PlanificaciA3n de deberes',
+            title: 'Planificaci?n de deberes',
           },
         },
         {
@@ -266,10 +267,12 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.permissions?.some((permission) => !auth.can(permission))) {
+    toast.warning('No tienes permisos para acceder a esta sección.')
     return { name: 'inicio' }
   }
 
   if (to.meta.roles?.length && !to.meta.roles.some((role) => auth.hasRole(role))) {
+    toast.warning('No tienes permisos para acceder a esta sección.')
     return { name: 'inicio' }
   }
 

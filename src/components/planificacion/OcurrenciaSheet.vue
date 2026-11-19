@@ -124,7 +124,6 @@ async function cargarAsignaciones() {
   try {
     asignaciones.value = await listarAsignaciones({
       ocurrenciaDeberId: ocurrencia.id,
-      limit: 500,
     })
     const mapa: Record<number, EstadoCumplimiento> = {}
     for (const asignacion of asignaciones.value) {

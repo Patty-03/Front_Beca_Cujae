@@ -124,13 +124,11 @@ async function cargar() {
         periodoPlanificacionId: props.periodo.id,
         desde: rango.desde,
         hasta: rango.hasta,
-        limit: 500,
       }),
       listarAsignaciones({
         periodoPlanificacionId: props.periodo.id,
         desde: rango.desde,
         hasta: rango.hasta,
-        limit: 500,
       }),
     ])
     ocurrencias.value = ocurrenciasMes

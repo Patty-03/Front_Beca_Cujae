@@ -111,11 +111,9 @@ async function cargar() {
       await Promise.all([
         listarAsignaciones({
           periodoPlanificacionId: props.periodo.id,
-          limit: 500,
         }),
         listarOcurrencias({
           periodoPlanificacionId: props.periodo.id,
-          limit: 500,
         }),
         listarDeudas(),
         listarTiposDeber(),

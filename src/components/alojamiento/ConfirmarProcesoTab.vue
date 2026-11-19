@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import type { NoAlojado, PreasignacionLeer, ProcesoLeer } from '@/types/alojamiento'
 import { computed, ref, watch } from 'vue'
-import { AlertCircleIcon, CheckCircle2Icon, LoaderCircleIcon, Trash2Icon } from '@lucide/vue'
+import { AlertCircleIcon, CheckCircle2Icon, Trash2Icon } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,8 @@ import { formatNumber } from '@/lib/format'
 import { puedeConfirmarProceso, puedeDescartarProceso } from '@/lib/alojamiento'
 import { toast } from 'vue-sonner'
 
+const PAGE = 50
+
 const props = defineProps<{
   proceso: ProcesoLeer
   preasignaciones: PreasignacionLeer[]
@@ -33,15 +35,21 @@ const descartarAbierto = ref(false)
 const confirmando = ref(false)
 const descartando = ref(false)
 const resultado = ref<{ reservas: number; excluidos: number } | null>(null)
+const visibles = ref(PAGE)
+const visiblesResumen = ref(PAGE)
 
 const esConfirmado = computed(() => props.proceso.estado === 'CONFIRMADO')
 const puedeConfirmar = computed(() =>
   puedeConfirmarProceso(props.proceso, props.preasignaciones.length - excluidos.value.length > 0),
 )
+const preasignacionesVisibles = computed(() => props.preasignaciones.slice(0, visibles.value))
+const preasignacionesResumenVisibles = computed(() => props.preasignaciones.slice(0, visiblesResumen.value))
 
 watch(() => props.proceso.id, () => {
   excluidos.value = []
   resultado.value = null
+  visibles.value = PAGE
+  visiblesResumen.value = PAGE
 })
 
 function toggleExcluido(id: number) {
@@ -131,6 +139,9 @@ async function descartar() {
           No hay preasignaciones para confirmar. Ejecuta y revisa la asignación primero.
         </div>
         <div v-else class="overflow-x-auto">
+          <div class="text-muted-foreground px-6 pb-2 text-xs">
+            Mostrando {{ formatNumber(preasignacionesVisibles.length) }} de {{ formatNumber(preasignaciones.length) }} preasignaciones
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,7 +152,7 @@ async function descartar() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="p in preasignaciones" :key="p.estudianteId">
+              <TableRow v-for="p in preasignacionesVisibles" :key="p.estudianteId">
                 <TableCell>
                   <input
                     type="checkbox"
@@ -161,6 +172,11 @@ async function descartar() {
               </TableRow>
             </TableBody>
           </Table>
+          <div v-if="preasignaciones.length > visibles" class="px-6 pt-3">
+            <Button variant="outline" class="w-full" @click="visibles += PAGE">
+              Mostrar más ({{ formatNumber(preasignaciones.length - visibles) }} restantes)
+            </Button>
+          </div>
         </div>
         <div class="flex flex-wrap justify-end gap-2 px-6 pt-4">
           <Button
@@ -179,11 +195,14 @@ async function descartar() {
 
     <Card v-else>
       <CardHeader>
-        <CardTitle>Resumen de confirmación</CardTitle>
+        <CardTitle>Resumen de confirmaci�n</CardTitle>
         <CardDescription>Preasignaciones incluidas en el proceso confirmado.</CardDescription>
       </CardHeader>
       <CardContent class="px-0">
         <div class="overflow-x-auto">
+          <div class="text-muted-foreground px-6 pb-2 text-xs">
+            Mostrando {{ formatNumber(preasignacionesResumenVisibles.length) }} de {{ formatNumber(preasignaciones.length) }} preasignaciones
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -193,13 +212,18 @@ async function descartar() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="p in preasignaciones" :key="p.estudianteId">
+              <TableRow v-for="p in preasignacionesResumenVisibles" :key="p.estudianteId">
                 <TableCell class="font-medium">{{ p.estudiante }}</TableCell>
                 <TableCell>{{ p.cuarto }}</TableCell>
                 <TableCell><Badge variant="secondary">{{ p.estado }}</Badge></TableCell>
               </TableRow>
             </TableBody>
           </Table>
+          <div v-if="preasignaciones.length > visiblesResumen" class="px-6 pt-3">
+            <Button variant="outline" class="w-full" @click="visiblesResumen += PAGE">
+              Mostrar m�s ({{ formatNumber(preasignaciones.length - visiblesResumen) }} restantes)
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

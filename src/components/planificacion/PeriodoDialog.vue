@@ -1,7 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { PeriodoLeer } from '@/types/planificacion'
 import { computed, ref, watch } from 'vue'
-import { LoaderCircleIcon } from '@lucide/vue'
+import { AlertCircleIcon, LoaderCircleIcon } from '@lucide/vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -24,6 +25,7 @@ const open = defineModel<boolean>('open', { default: false })
 const inicio = ref('')
 const fin = ref('')
 const guardando = ref(false)
+const errorGuardar = ref<string | null>(null)
 
 const editando = computed(() => props.periodo != null)
 
@@ -31,6 +33,11 @@ watch(open, (valor) => {
   if (!valor) return
   inicio.value = props.periodo?.inicio ?? ''
   fin.value = props.periodo?.fin ?? ''
+  errorGuardar.value = null
+})
+
+watch([inicio, fin], () => {
+  errorGuardar.value = null
 })
 
 async function guardar() {
@@ -43,23 +50,28 @@ async function guardar() {
     return
   }
   guardando.value = true
+  errorGuardar.value = null
   try {
     if (props.periodo) {
       await actualizarPeriodo(props.periodo.id, {
         inicio: inicio.value,
         fin: fin.value,
       })
-      toast.success('Período actualizado')
+      toast.success('PerÃ­odo actualizado')
     } else {
       await crearPeriodo({ inicio: inicio.value, fin: fin.value })
-      toast.success('Período creado')
+      toast.success('PerÃ­odo creado')
     }
     open.value = false
     emit('guardado')
   } catch (caught) {
-    toast.error('No se pudo guardar el período', {
-      description: caught instanceof Error ? caught.message : undefined,
-    })
+    const mensaje =
+      caught instanceof Error ? caught.message : 'No se pudo guardar el perÃ­odo.'
+    errorGuardar.value = mensaje
+    toast.error(
+      editando.value ? 'No se pudo actualizar el perÃ­odo' : 'No se pudo crear el perÃ­odo',
+      { description: mensaje },
+    )
   } finally {
     guardando.value = false
   }
@@ -70,9 +82,9 @@ async function guardar() {
   <Dialog v-model:open="open">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>{{ editando ? 'Editar período' : 'Nuevo período' }}</DialogTitle>
+        <DialogTitle>{{ editando ? 'Editar perÃ­odo' : 'Nuevo perÃ­odo' }}</DialogTitle>
         <DialogDescription>
-          Un período define el rango de fechas sobre el que se planifican los deberes.
+          Un perÃ­odo define el rango de fechas sobre el que se planifican los deberes.
         </DialogDescription>
       </DialogHeader>
 
@@ -88,9 +100,17 @@ async function guardar() {
       </div>
 
       <p class="text-muted-foreground text-xs">
-        Solo los períodos en BORRADOR se pueden editar. Al publicarlo se habilita el uso
+        Solo los perÃ­odos en BORRADOR se pueden editar. Al publicarlo se habilita el uso
         operativo; al cerrarlo queda inmutable.
       </p>
+
+      <Alert v-if="errorGuardar" variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>
+          {{ editando ? 'No se pudo actualizar el perÃ­odo' : 'No se pudo crear el perÃ­odo' }}
+        </AlertTitle>
+        <AlertDescription>{{ errorGuardar }}</AlertDescription>
+      </Alert>
 
       <DialogFooter>
         <DialogClose as-child>
@@ -98,7 +118,7 @@ async function guardar() {
         </DialogClose>
         <Button type="button" :disabled="guardando" @click="guardar">
           <LoaderCircleIcon v-if="guardando" class="animate-spin" />
-          {{ editando ? 'Guardar cambios' : 'Crear período' }}
+          {{ editando ? 'Guardar cambios' : 'Crear perÃ­odo' }}
         </Button>
       </DialogFooter>
     </DialogContent>

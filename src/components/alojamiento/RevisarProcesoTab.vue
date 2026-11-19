@@ -5,7 +5,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import {
   AlertCircleIcon,
   ArrowRightLeftIcon,
-  LoaderCircleIcon,
   LockIcon,
   RefreshCwIcon,
   Trash2Icon,
@@ -55,6 +54,11 @@ const asignarCuarto = ref<Record<number, number | ''>>({})
 const ocupando = ref<number | null>(null)
 const bloqueando = ref(false)
 
+const PAGE_GRUPOS = 30
+const PAGE_NO = 50
+const visiblesGrupos = ref(PAGE_GRUPOS)
+const visiblesNo = ref(PAGE_NO)
+
 const soloLectura = computed(() => esSoloLecturaProceso(props.proceso.estado))
 
 const gruposPorCuarto = computed(() => {
@@ -65,6 +69,8 @@ const gruposPorCuarto = computed(() => {
   }
   return Array.from(map.values()).sort((a, b) => a.cuarto.localeCompare(b.cuarto))
 })
+const gruposVisibles = computed(() => gruposPorCuarto.value.slice(0, visiblesGrupos.value))
+const noAlojadosVisibles = computed(() => props.noAlojados.slice(0, visiblesNo.value))
 
 async function cargarCuartos() {
   cargandoCuartos.value = true
@@ -163,7 +169,11 @@ async function asignar(n: NoAlojado) {
 }
 
 onMounted(cargarCuartos)
-watch(() => props.proceso.id, cargarCuartos)
+watch(() => props.proceso.id, () => {
+  visiblesGrupos.value = PAGE_GRUPOS
+  visiblesNo.value = PAGE_NO
+  void cargarCuartos()
+})
 </script>
 
 <template>
@@ -193,9 +203,13 @@ watch(() => props.proceso.id, cargarCuartos)
       </CardHeader>
       <CardContent class="space-y-4">
         <div v-if="gruposPorCuarto.length === 0" class="text-muted-foreground py-6 text-center text-sm">
-          Sin preasignaciones. Ejecuta la asignación para generar resultados.
+          Sin preasignaciones. Ejecuta la asignaci�n para generar resultados.
         </div>
-        <div v-for="g in gruposPorCuarto" :key="g.cuartoId" class="rounded-lg border">
+        <template v-else>
+          <div class="text-muted-foreground text-xs">
+            Mostrando {{ gruposVisibles.length }} de {{ gruposPorCuarto.length }} cuartos ({{ preasignaciones.length }} preasignaciones)
+          </div>
+          <div v-for="g in gruposVisibles" :key="g.cuartoId" class="rounded-lg border">
           <div class="bg-muted/40 flex items-center justify-between gap-2 border-b px-3 py-2">
             <div class="font-medium">{{ g.cuarto }}</div>
             <Badge variant="outline">{{ g.items.length }} asignados</Badge>
@@ -232,7 +246,11 @@ watch(() => props.proceso.id, cargarCuartos)
               </div>
             </div>
           </div>
-        </div>
+          </div>
+          <Button v-if="gruposPorCuarto.length > visiblesGrupos" variant="outline" class="w-full" @click="visiblesGrupos += PAGE_GRUPOS">
+            Mostrar m�s cuartos ({{ gruposPorCuarto.length - visiblesGrupos }} restantes)
+          </Button>
+        </template>
       </CardContent>
     </Card>
 
@@ -245,6 +263,9 @@ watch(() => props.proceso.id, cargarCuartos)
           No hay estudiantes pendientes sin cuarto.
         </div>
         <div v-else class="overflow-x-auto">
+          <div class="text-muted-foreground px-6 pb-2 text-xs">
+            Mostrando {{ noAlojadosVisibles.length }} de {{ noAlojados.length }} estudiantes
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -255,7 +276,7 @@ watch(() => props.proceso.id, cargarCuartos)
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="n in noAlojados" :key="n.estudianteId" :class="n.seResolveriaRelajando ? 'bg-amber-50/50' : ''">
+              <TableRow v-for="n in noAlojadosVisibles" :key="n.estudianteId" :class="n.seResolveriaRelajando ? 'bg-amber-50/50' : ''">
                 <TableCell>
                   <div class="font-medium">{{ n.estudiante }}</div>
                   <div class="text-muted-foreground text-xs">ID {{ n.estudianteId }}</div>
@@ -283,9 +304,14 @@ watch(() => props.proceso.id, cargarCuartos)
               </TableRow>
             </TableBody>
           </Table>
+          <div v-if="noAlojados.length > visiblesNo" class="px-6 pt-3">
+            <Button variant="outline" class="w-full" @click="visiblesNo += PAGE_NO">
+              Mostrar m�s ({{ noAlojados.length - visiblesNo }} restantes)
+            </Button>
+          </div>
         </div>
         <p v-if="!soloLectura && noAlojados.length" class="text-muted-foreground px-6 pb-4 text-xs">
-          La asignación manual queda sujeta a validaciones de capacidad/habitabilidad del backend.
+          La asignaci�n manual queda sujeta a validaciones de capacidad/habitabilidad del backend.
         </p>
       </CardContent>
     </Card>

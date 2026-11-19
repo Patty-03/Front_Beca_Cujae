@@ -269,13 +269,15 @@ function guardarCondicion() {
       }
       entrada.valorTexto = condicionForm.value.valorTexto.trim()
       break
-    case 'entero':
-      if (!condicionForm.value.valorEntero.trim()) {
+    case 'entero': {
+      const valor = String(condicionForm.value.valorEntero ?? '').trim()
+      if (!valor) {
         toast.warning('Ingresa el valor numérico.')
         return
       }
-      entrada.valorEntero = Number(condicionForm.value.valorEntero)
+      entrada.valorEntero = Number(valor)
       break
+    }
     case 'fecha':
       if (!condicionForm.value.valorFecha) {
         toast.warning('Ingresa la fecha.')
@@ -297,13 +299,16 @@ function guardarCondicion() {
       }
       entrada.valorPermitidoId = Number(condicionForm.value.valorPermitidoId)
       break
-    case 'parametro':
-      if (!condicionForm.value.parametro.trim()) {
-        toast.warning('Ingresa el parámetro numérico.')
+    case 'parametro': {
+      const valor = String(condicionForm.value.parametro ?? '').trim()
+      const parametro = Number(valor)
+      if (!valor || !Number.isFinite(parametro) || parametro <= 0) {
+        toast.warning('Ingresa un parámetro numérico mayor que 0.')
         return
       }
-      entrada.parametro = Number(condicionForm.value.parametro)
+      entrada.parametro = parametro
       break
+    }
     default:
       toast.warning('No hay campo de valor disponible para esta combinación.')
       return
@@ -338,7 +343,7 @@ function resetearPrioridadForm() {
     orden: '',
     sentido: '',
     nivelAgrupamiento: '',
-    nulosAlFinal: false,
+    nulosAlFinal: true,
     parametro: '',
   }
   editarPrioridadIdx.value = null
@@ -353,33 +358,91 @@ function abrirEditarPrioridad(idx: number) {
     orden: String(p.orden ?? ''),
     sentido: p.sentido ?? '',
     nivelAgrupamiento: p.nivelAgrupamiento ?? '',
-    nulosAlFinal: p.nulosAlFinal ?? false,
+    nulosAlFinal: p.nulosAlFinal ?? true,
     parametro: String(p.parametro ?? ''),
   }
   editarPrioridadIdx.value = idx
 }
 
+const prioridadValida = computed(() => {
+  if (props.cargando || cargandoRefs.value) return false
+  const atributoId = Number(prioridadForm.value.atributoId)
+  const tipo = prioridadForm.value.tipo
+  if (!atributoId || !tipo) return false
+  if (tipo === 'ORDEN') {
+    const orden = Number(prioridadForm.value.orden)
+    if (!Number.isFinite(orden) || orden < 1) return false
+    if (!prioridadForm.value.sentido) return false
+  }
+  if (tipo === 'AGRUPAMIENTO' && !prioridadForm.value.nivelAgrupamiento) return false
+  const parametro = String(prioridadForm.value.parametro ?? '').trim()
+  if (parametro) {
+    const valor = Number(parametro)
+    if (!Number.isFinite(valor) || valor <= 0) return false
+  }
+  return true
+})
+
 function guardarPrioridad() {
   const atributoId = Number(prioridadForm.value.atributoId)
-  if (!atributoId || !prioridadForm.value.tipo) {
+  const tipo = prioridadForm.value.tipo
+  if (!atributoId || !tipo) {
     toast.warning('Selecciona atributo y tipo de prioridad.')
     return
   }
+
+  if (tipo === 'ORDEN') {
+    const orden = Number(prioridadForm.value.orden)
+    if (!Number.isFinite(orden) || orden < 1) {
+      toast.warning('Ingresa un orden numérico mayor o igual que 1.')
+      return
+    }
+    if (!prioridadForm.value.sentido) {
+      toast.warning('Selecciona el sentido de la prioridad.')
+      return
+    }
+  }
+
+  if (tipo === 'AGRUPAMIENTO' && !prioridadForm.value.nivelAgrupamiento) {
+    toast.warning('Selecciona el nivel de agrupamiento.')
+    return
+  }
+
+  const parametroTexto = String(prioridadForm.value.parametro ?? '').trim()
+  let parametro: number | undefined
+  if (parametroTexto) {
+    parametro = Number(parametroTexto)
+    if (!Number.isFinite(parametro) || parametro <= 0) {
+      toast.warning('El parámetro debe ser un número mayor que 0.')
+      return
+    }
+  }
+
+  const ordenActual = Number(prioridadForm.value.orden)
+  const orden =
+    tipo === 'ORDEN'
+      ? ordenActual
+      : Number.isFinite(ordenActual) && ordenActual >= 1
+        ? ordenActual
+        : prioridades.value.length + 1
+
   const entrada: PrioridadInput = {
     atributoDefId: atributoId,
-    tipo: prioridadForm.value.tipo,
-    orden: prioridadForm.value.orden ? Number(prioridadForm.value.orden) : 0,
+    tipo,
+    orden,
   }
-  if (prioridadForm.value.tipo === 'ORDEN') {
-    if (prioridadForm.value.sentido) entrada.sentido = prioridadForm.value.sentido
+
+  if (tipo === 'ORDEN') {
+    entrada.sentido = prioridadForm.value.sentido as 'ASC' | 'DESC'
     entrada.nulosAlFinal = prioridadForm.value.nulosAlFinal
   }
-  if (prioridadForm.value.tipo === 'AGRUPAMIENTO') {
-    if (prioridadForm.value.nivelAgrupamiento)
-      entrada.nivelAgrupamiento = prioridadForm.value.nivelAgrupamiento
+
+  if (tipo === 'AGRUPAMIENTO') {
+    entrada.nivelAgrupamiento = prioridadForm.value
+      .nivelAgrupamiento as 'CUARTO' | 'ESCALERA' | 'EDIFICIO'
   }
-  if (prioridadForm.value.parametro.trim())
-    entrada.parametro = Number(prioridadForm.value.parametro)
+
+  if (parametro !== undefined) entrada.parametro = parametro
 
   if (editarPrioridadIdx.value !== null) {
     prioridades.value[editarPrioridadIdx.value] = entrada
@@ -733,7 +796,10 @@ function etiquetaAtributo(id: number | '') {
               </SelectContent>
             </Select>
           </div>
-          <div class="flex flex-col gap-1">
+          <div
+            v-if="prioridadForm.tipo === 'ORDEN'"
+            class="flex flex-col gap-1"
+          >
             <Label class="flex items-center gap-1">
               <input
                 type="checkbox"
@@ -756,12 +822,7 @@ function etiquetaAtributo(id: number | '') {
             <div class="h-[38px]"></div>
             <Button
               type="button"
-              :disabled="
-                props.cargando ||
-                cargandoRefs ||
-                !prioridadAtributoSeleccionado ||
-                !prioridadForm.tipo
-              "
+              :disabled="!prioridadValida"
               @click="guardarPrioridad"
             >
               {{

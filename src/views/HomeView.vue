@@ -23,48 +23,52 @@ const auth = useAuthStore()
 const nombreUsuario = computed(() => auth.user?.name ?? 'estudiante')
 const esEstudiante = computed(() => esSoloEstudiante(auth.user?.roles ?? []))
 
-const modulos: Modulo[] = [
-  {
-    nombre: 'Infraestructura',
-    descripcion: 'Consulta y administra edificios, escaleras, cuartos y su estado constructivo.',
-    ruta: '/infraestructura',
-    icono: Building2Icon,
-    disponible: true,
-    etiqueta: 'Disponible',
-  },
-  {
-    nombre: 'Deberes',
-    descripcion: 'Gestiona las tareas y responsabilidades de los estudiantes de la residencia.',
-    ruta: '/deberes',
-    icono: Building2Icon,
-    disponible: false,
-    etiqueta: 'En preparación',
-  },
-  {
-    nombre: 'Estudiantes',
-    descripcion: 'Consulta la información y el estado de los estudiantes residentes.',
-    ruta: '/estudiantes',
-    icono: Building2Icon,
-    disponible: false,
-    etiqueta: 'En preparación',
-  },
-  {
-    nombre: 'Evaluaciones',
-    descripcion: 'Revisa y registra las evaluaciones realizadas a los estudiantes.',
-    ruta: '/evaluaciones',
-    icono: Building2Icon,
-    disponible: false,
-    etiqueta: 'En preparación',
-  },
-  {
-    nombre: 'Solicitudes de medios',
-    descripcion: 'Aprueba o rechaza las solicitudes de medios propios de los estudiantes.',
-    ruta: '/solicitudes-medios',
-    icono: Building2Icon,
-    disponible: true,
-    etiqueta: 'Disponible',
-  },
-]
+const modulos = computed<Modulo[]>(() =>
+  [
+    {
+      nombre: 'Infraestructura',
+      descripcion: 'Consulta y administra edificios, escaleras, cuartos y su estado constructivo.',
+      ruta: '/infraestructura',
+      icono: Building2Icon,
+      disponible: true,
+      etiqueta: 'Disponible',
+    },
+    auth.can('planificacion:read')
+      ? {
+          nombre: 'Planificación de deberes',
+          descripcion: 'Gestiona las tareas y responsabilidades de los estudiantes de la residencia.',
+          ruta: '/planificacion-deberes',
+          icono: Building2Icon,
+          disponible: true,
+          etiqueta: 'Disponible',
+        }
+      : null,
+    {
+      nombre: 'Estudiantes',
+      descripcion: 'Consulta la información y el estado de los estudiantes residentes.',
+      ruta: '/estudiantes',
+      icono: Building2Icon,
+      disponible: false,
+      etiqueta: 'En preparación',
+    },
+    {
+      nombre: 'Evaluaciones',
+      descripcion: 'Revisa y registra las evaluaciones realizadas a los estudiantes.',
+      ruta: '/evaluaciones',
+      icono: Building2Icon,
+      disponible: false,
+      etiqueta: 'En preparación',
+    },
+    {
+      nombre: 'Solicitudes de medios',
+      descripcion: 'Aprueba o rechaza las solicitudes de medios propios de los estudiantes.',
+      ruta: '/solicitudes-medios',
+      icono: Building2Icon,
+      disponible: true,
+      etiqueta: 'Disponible',
+    },
+  ].filter((modulo): modulo is Modulo => modulo !== null),
+)
 
 const moduloMiPerfil: Modulo = {
   nombre: 'Mi Perfil',
@@ -85,7 +89,7 @@ const moduloSolicitarMedio: Modulo = {
 }
 
 const modulosVisibles = computed(() =>
-  esEstudiante.value ? [moduloMiPerfil, moduloSolicitarMedio] : modulos
+  esEstudiante.value ? [moduloMiPerfil, moduloSolicitarMedio] : modulos.value
 )
 
 const avisos = ref<Aviso[]>([])

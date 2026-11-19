@@ -50,7 +50,6 @@ watch(open, async (valor) => {
       periodoPlanificacionId: props.periodoPlanificacionId,
       desde: hoy,
       tipoDeberId: props.asignacion.tipoDeberId,
-      limit: 500,
     })
     ocurrencias.value = lista.filter(
       (ocurrencia) => !ocurrencia.cancelada && ocurrencia.fecha >= hoy,

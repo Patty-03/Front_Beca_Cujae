@@ -394,16 +394,37 @@ export class HttpPlanificacionRepository implements PlanificacionRepository {
   }
 
   async listarOcurrencias(filtros?: OcurrenciaFiltros): Promise<OcurrenciaLeer[]> {
-    const q = query({
-      periodo_planificacion_id: filtros?.periodoPlanificacionId,
-      desde: filtros?.desde,
-      hasta: filtros?.hasta,
-      tipo_deber_id: filtros?.tipoDeberId,
-      configuracion_deber_id: filtros?.configuracionDeberId,
-      limit: filtros?.limit,
-      offset: filtros?.offset,
-    })
-    return aCamel<OcurrenciaLeer[]>(await solicitarApi<unknown>(`${OCURRENCIAS}${q}`))
+    if (filtros?.limit != null || filtros?.offset != null) {
+      const q = query({
+        periodo_planificacion_id: filtros.periodoPlanificacionId,
+        desde: filtros.desde,
+        hasta: filtros.hasta,
+        tipo_deber_id: filtros.tipoDeberId,
+        configuracion_deber_id: filtros.configuracionDeberId,
+        limit: filtros.limit,
+        offset: filtros.offset,
+      })
+      return aCamel<OcurrenciaLeer[]>(await solicitarApi<unknown>(`${OCURRENCIAS}${q}`))
+    }
+    const pageSize = 200
+    const resultado: OcurrenciaLeer[] = []
+    for (let offset = 0; ; offset += pageSize) {
+      const q = query({
+        periodo_planificacion_id: filtros?.periodoPlanificacionId,
+        desde: filtros?.desde,
+        hasta: filtros?.hasta,
+        tipo_deber_id: filtros?.tipoDeberId,
+        configuracion_deber_id: filtros?.configuracionDeberId,
+        limit: pageSize,
+        offset,
+      })
+      const pagina = aCamel<OcurrenciaLeer[]>(
+        await solicitarApi<unknown>(`${OCURRENCIAS}${q}`),
+      )
+      resultado.push(...pagina)
+      if (pagina.length < pageSize) break
+    }
+    return resultado
   }
 
   async leerOcurrencia(id: number): Promise<OcurrenciaLeer> {
@@ -438,20 +459,43 @@ export class HttpPlanificacionRepository implements PlanificacionRepository {
   }
 
   async listarAsignaciones(filtros?: AsignacionFiltros): Promise<AsignacionLeer[]> {
-    const q = query({
-      periodo_planificacion_id: filtros?.periodoPlanificacionId,
-      estudiante_id: filtros?.estudianteId,
-      ocurrencia_deber_id: filtros?.ocurrenciaDeberId,
-      desde: filtros?.desde,
-      hasta: filtros?.hasta,
-      estado: filtros?.estado,
-      tipo_deber_id: filtros?.tipoDeberId,
-      limit: filtros?.limit,
-      offset: filtros?.offset,
-    })
-    return aCamel<AsignacionLeer[]>(
-      await solicitarApi<unknown>(`${ASIGNACIONES}${q}`),
-    )
+    if (filtros?.limit != null || filtros?.offset != null) {
+      const q = query({
+        periodo_planificacion_id: filtros.periodoPlanificacionId,
+        estudiante_id: filtros.estudianteId,
+        ocurrencia_deber_id: filtros.ocurrenciaDeberId,
+        desde: filtros.desde,
+        hasta: filtros.hasta,
+        estado: filtros.estado,
+        tipo_deber_id: filtros.tipoDeberId,
+        limit: filtros.limit,
+        offset: filtros.offset,
+      })
+      return aCamel<AsignacionLeer[]>(
+        await solicitarApi<unknown>(`${ASIGNACIONES}${q}`),
+      )
+    }
+    const pageSize = 200
+    const resultado: AsignacionLeer[] = []
+    for (let offset = 0; ; offset += pageSize) {
+      const q = query({
+        periodo_planificacion_id: filtros?.periodoPlanificacionId,
+        estudiante_id: filtros?.estudianteId,
+        ocurrencia_deber_id: filtros?.ocurrenciaDeberId,
+        desde: filtros?.desde,
+        hasta: filtros?.hasta,
+        estado: filtros?.estado,
+        tipo_deber_id: filtros?.tipoDeberId,
+        limit: pageSize,
+        offset,
+      })
+      const pagina = aCamel<AsignacionLeer[]>(
+        await solicitarApi<unknown>(`${ASIGNACIONES}${q}`),
+      )
+      resultado.push(...pagina)
+      if (pagina.length < pageSize) break
+    }
+    return resultado
   }
 
   async actualizarAsignacion(

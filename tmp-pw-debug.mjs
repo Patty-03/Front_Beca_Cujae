@@ -1,0 +1,23 @@
+import { chromium } from 'playwright';
+const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTUwNjQyNTYsImlhdCI6MTc5NTAzNTQ1Ni4yMTg5NTQsInN1YiI6IjMifQ.adzgpmroiwQr3YXpr0zvOXBiAfNU5RY1BkEkKQNKoR8';
+const base = 'http://localhost:5173';
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext();
+  await context.addInitScript((t) => { try { localStorage.setItem('beca-cujae-access_token', t); } catch {} }, TOKEN);
+  const page = await context.newPage();
+  const msgs = []; const errs = [];
+  page.on('console', m => msgs.push({t:m.type(), x:m.text()}));
+  page.on('pageerror', e => errs.push(String(e)));
+  page.on('requestfailed', r => { if(r.url().includes('5173')||r.url().includes('8000')) errs.push('reqfail '+r.url()+' '+r.failure()?.errorText); });
+  await page.goto(base + '/asignacion-cuartos', { waitUntil: 'networkidle', timeout: 30000 }).catch(e=>errs.push('goto '+e.message));
+  await sleep(2000);
+  const body = await page.locator('body').innerText().catch(()=> '');
+  console.log('URL', page.url());
+  console.log('BODY', body.replace(/\s+/g,' ').slice(0,1200));
+  console.log('USAR', await page.getByRole('button', { name: /Usar asignaci/i }).count());
+  console.log('ERRS', JSON.stringify(errs.slice(0,20)));
+  console.log('CONSOLE', JSON.stringify(msgs.filter(m=>m.t==='error'||/error|fail|warn/i.test(m.x)).slice(0,20)));
+  await browser.close();
+})();
